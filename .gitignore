@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+.vite/
+coverage/
+# SQLite dossier history (single-user dev — not for sharing across machines)
+apps/api/data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm

@@ -1,0 +1,23 @@
+{
+  "name": "crux",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Civic fact-verification dossier tool",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "dev:api": "npm -w @crux/api run dev",
+    "dev:web": "npm -w @crux/web run dev",
+    "build": "npm -w @crux/shared-types run build && npm -w @crux/api run build && npm -w @crux/web run build",
+    "typecheck": "npm -w @crux/shared-types run typecheck && npm -w @crux/api run typecheck && npm -w @crux/web run typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=18.17"
+  }
+}

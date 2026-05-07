@@ -1,0 +1,19 @@
+{
+  "name": "Crux",
+  "short_name": "Crux",
+  "description": "Civic fact-verification dossier tool. Paste a claim, get an evidence dossier — never a verdict.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8fafc",
+  "theme_color": "#1f2937",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
