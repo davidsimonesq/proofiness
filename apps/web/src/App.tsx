@@ -5,8 +5,16 @@ import { DossierView } from "./components/DossierView.js";
 import { ProgressIndicator } from "./components/ProgressIndicator.js";
 import { HistoryList } from "./components/HistoryList.js";
 import { StaticPage } from "./components/StaticPage.js";
+import { LandingPage } from "./components/LandingPage.js";
 import { getDossier, streamDossier, type DossierError } from "./lib/api.js";
-import { buildDossierHash, buildStaticHash, navigate, useRoute } from "./lib/route.js";
+import {
+  APP_HASH,
+  buildDossierHash,
+  buildStaticHash,
+  navigate,
+  useRoute,
+  type Route,
+} from "./lib/route.js";
 
 const PROGRESS_STEP_LABELS: Record<ProgressStep, string> = {
   normalizing: "claim normalization",
@@ -34,27 +42,49 @@ export default function App() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
-      <Header />
-      {route.kind === "dossier" ? (
-        <DossierRoute id={route.id} />
-      ) : route.kind === "static" ? (
-        <StaticPage slug={route.slug} />
-      ) : (
-        <HomeRoute />
-      )}
+      <Header route={route} />
+      {renderRoute(route)}
       <Footer />
     </main>
   );
 }
 
-function Header() {
+function renderRoute(route: Route) {
+  switch (route.kind) {
+    case "landing":
+      return <LandingPage />;
+    case "app":
+      return <AppRoute />;
+    case "dossier":
+      return <DossierRoute id={route.id} />;
+    case "static":
+      return <StaticPage slug={route.slug} />;
+    case "unknown":
+    default:
+      return <LandingPage />;
+  }
+}
+
+function Header({ route }: { route: Route }) {
+  // "Open the App" CTA visible on landing and static pages — places where the
+  // user might be reading and want to get to the tool without scrolling. Hidden
+  // on app and dossier views (they're already in the tool).
+  const showAppLink = route.kind === "landing" || route.kind === "static";
   return (
     <header className="mb-8 sm:mb-12">
       {/* Top hairline + serial number — establishes the document genre */}
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <span className="font-mono text-[0.65rem] uppercase tracking-widest text-stone-500">
           i-Resist · Civic Tech · PRF-001
         </span>
+        {showAppLink && (
+          <a
+            href={APP_HASH}
+            className="font-display text-xs font-semibold uppercase tracking-widish text-ink hover:text-accent"
+          >
+            Open the App →
+          </a>
+        )}
       </div>
       <div className="pf-rule" />
       <div className="flex items-end justify-between gap-4 pt-3">
@@ -122,7 +152,9 @@ function FooterLink({
   );
 }
 
-function HomeRoute() {
+// AppRoute — the actual tool: input form + progress + history list.
+// Was HomeRoute before the landing page was added; functionally unchanged.
+function AppRoute() {
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const lastProgressRef = useRef<ProgressEvent | null>(null);
 
@@ -252,8 +284,12 @@ function DossierRoute({ id }: { id: string }) {
 
   return (
     <>
+      {/* Back link goes to the app, not the landing page — coming back from a
+          dossier almost always means "submit another claim", not "re-read the
+          marketing copy". Visitors arriving via shared permalinks can still
+          reach the landing page via the wordmark. */}
       <a
-        href="#/"
+        href={APP_HASH}
         className="mb-6 inline-block font-mono text-xs uppercase tracking-widish text-stone-600 hover:text-ink"
       >
         ← Index
@@ -274,7 +310,7 @@ function DossierRoute({ id }: { id: string }) {
   );
 }
 
-// Reusable numbered-section header used across home + dossier views.
+// Reusable numbered-section header used across app + dossier + static views.
 export function SectionHeader({ number, label }: { number: string; label: string }) {
   return (
     <div className="mb-3 flex items-baseline gap-3">

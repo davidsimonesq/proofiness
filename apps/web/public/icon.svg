@@ -1,5 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#1f2937"/>
-  <text x="50%" y="50%" font-family="Georgia, serif" font-size="280" font-weight="700"
-        fill="#f8fafc" text-anchor="middle" dominant-baseline="central" letter-spacing="-8">C</text>
+  <rect width="512" height="512" rx="96" fill="#0c0a09"/>
+  <text x="50%" y="50%"
+        font-family="'IBM Plex Sans Condensed', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif"
+        font-size="320" font-weight="700"
+        fill="#fafaf9" text-anchor="middle" dominant-baseline="central">P</text>
 </svg>

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 
 // Minimal hash-based router. Avoids react-router dependency. Routes:
-//   #/             → home (input + history)
-//   #/dossier/:id  → view a saved dossier
+//   #/             → landing page (marketing / value-prop)
+//   #/app          → the app itself (input + history)
+//   #/dossier/:id  → view a saved dossier (permalink, shareable)
 //   #/about        → about the project
 //   #/privacy      → privacy practices
 //   #/terms        → terms of use
@@ -14,7 +15,8 @@ import { useEffect, useState } from "react";
 export type StaticPageSlug = "about" | "privacy" | "terms" | "help";
 
 export type Route =
-  | { kind: "home" }
+  | { kind: "landing" }
+  | { kind: "app" }
   | { kind: "dossier"; id: string }
   | { kind: "static"; slug: StaticPageSlug }
   | { kind: "unknown" };
@@ -23,12 +25,16 @@ const STATIC_SLUGS: ReadonlySet<string> = new Set(["about", "privacy", "terms", 
 
 export function parseHash(hash: string): Route {
   const cleaned = hash.replace(/^#/, "").replace(/^\/+/, "");
-  if (cleaned === "" || cleaned === "/") return { kind: "home" };
+  if (cleaned === "" || cleaned === "/") return { kind: "landing" };
+  if (cleaned === "app") return { kind: "app" };
   const dossierMatch = cleaned.match(/^dossier\/([a-z0-9-]+)$/i);
   if (dossierMatch) return { kind: "dossier", id: dossierMatch[1]! };
   if (STATIC_SLUGS.has(cleaned)) return { kind: "static", slug: cleaned as StaticPageSlug };
   return { kind: "unknown" };
 }
+
+export const APP_HASH = "#/app";
+export const LANDING_HASH = "#/";
 
 export function buildDossierHash(id: string): string {
   return `#/dossier/${id}`;
