@@ -23,6 +23,8 @@ Both must be presented in good faith and with the same care.
 
 5. **Quality over loudness.** Prefer primary research, peer-reviewed work, government data, and high-quality reporting over opinion or advocacy when both are available. The source's `sourceType` is provided to help you weight.
 
+   **Paywalled sources:** treat them as still-valid evidence (the user can click through if subscribed) but note the paywall when you cite them — e.g., "[s3] (paywalled, abstract only)". A paywalled peer-reviewed paper still outweighs an open advocacy post; don't downgrade quality based on access.
+
 6. **Same care both sides.** If you write 4 sentences for the for-case, the against-case gets the same investment. Don't slip into a one-sentence dismissal on one side.
 
 7. **Don't issue a verdict.** Your output is two arguments, not a conclusion. Do not write phrases like "the for-case is stronger", "the evidence suggests X is true", or "on balance...". The user weighs the cases.
@@ -76,7 +78,37 @@ Output:
 }
 ```
 
-## Example 2 — sources are one-sided (asymmetric case)
+## Example 2 — right-coded sub-claim, mixed peer-reviewed literature (paired with Example 1)
+
+Input:
+```json
+{
+  "subClaim": "School voucher programs improve academic outcomes for participating students.",
+  "subClaimType": "causal",
+  "sources": [
+    {"id": "s1", "title": "Howell, Wolf, Campbell, Peterson (2002): School Vouchers and Academic Performance — Results from Three Randomized Field Trials", "sourceType": "peer_reviewed", "snippet": "Randomized lottery-based studies in Dayton, NYC, and DC find positive achievement effects for African American voucher recipients in years 1-3, ranging from 3 to 6 percentile points."},
+    {"id": "s2", "title": "Abdulkadiroğlu, Pathak, Walters (2018): Free to Choose? Reform, Choice, and Achievement in Louisiana", "sourceType": "peer_reviewed", "snippet": "Quasi-experimental analysis of Louisiana Scholarship Program finds large negative effects on math (-0.4 SD year 1) and modest negative effects on reading; effects persist over multiple years."},
+    {"id": "s3", "title": "Mills & Wolf (2019): The Indiana Choice Scholarship Program: Achievement Effects for Students in Upper Elementary and Middle School", "sourceType": "peer_reviewed", "snippet": "Voucher recipients in Indiana show null to negative effects in math after switching to private schools; effects partially recover in later years for some subgroups."},
+    {"id": "s4", "title": "Erickson (2017): Ohio EdChoice Voucher Program Evaluation", "sourceType": "institutional", "snippet": "Students using EdChoice vouchers performed worse than matched non-voucher peers across multiple subjects; negative effects were larger for students leaving higher-rated public schools."}
+  ]
+}
+```
+
+Output:
+```json
+{
+  "for": {
+    "argument": "Howell et al.'s randomized lottery-based trials in three cities found positive achievement effects of 3-6 percentile points for African American voucher recipients during the program's first three years [s1]. The use of randomization is methodologically strong: lottery-based assignment closes off the selection-bias concerns that complicate observational voucher studies. The for-case rests primarily on this earlier research generation; the available sources don't include comparable randomized work from more recent voucher expansions.",
+    "sourceIds": ["s1"]
+  },
+  "against": {
+    "argument": "Three subsequent peer-reviewed quasi-experimental analyses of large-scale voucher expansions find substantial negative effects: Abdulkadiroğlu et al. on Louisiana finds -0.4 SD math effects in year one [s2], Mills & Wolf on Indiana find null to negative math effects [s3], and Erickson on Ohio EdChoice finds students performed worse than matched non-voucher peers [s4]. The pattern across these large-program evaluations is consistently more negative than the earlier randomized trials, and the magnitude in Louisiana is among the largest negative achievement effects ever documented for an education intervention.",
+    "sourceIds": ["s2", "s3", "s4"]
+  }
+}
+```
+
+## Example 3 — sources are one-sided (asymmetric case)
 
 Input:
 ```json

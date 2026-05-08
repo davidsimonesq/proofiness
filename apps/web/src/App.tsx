@@ -1,16 +1,30 @@
-import { useEffect, useState } from "react";
-import type { Dossier, ProgressEvent } from "@crux/shared-types";
+import { useEffect, useRef, useState } from "react";
+import type { Dossier, ProgressEvent, ProgressStep } from "@crux/shared-types";
 import { ClaimInput } from "./components/ClaimInput.js";
 import { DossierView } from "./components/DossierView.js";
 import { ProgressIndicator } from "./components/ProgressIndicator.js";
 import { HistoryList } from "./components/HistoryList.js";
-import { getDossier, streamDossier } from "./lib/api.js";
+import { getDossier, streamDossier, type DossierError } from "./lib/api.js";
 import { buildDossierHash, navigate, useRoute } from "./lib/route.js";
+
+const PROGRESS_STEP_LABELS: Record<ProgressStep, string> = {
+  normalizing: "claim normalization",
+  decomposing: "decomposition",
+  searching: "search",
+  fetching: "source fetching",
+  classifying_sources: "source classification",
+  tracing_provenance: "provenance tracing",
+  generating_steelmans: "steelman generation",
+  classifying_contestation: "contestation classification",
+  identifying_crux: "crux identification",
+  persisting: "saving",
+};
 
 type Phase =
   | { kind: "idle" }
   | { kind: "loading"; progress: ProgressEvent | null }
-  | { kind: "error"; message: string }
+  // Audit #13: preserve last-progress so the user can see WHICH step failed.
+  | { kind: "error"; error: DossierError; lastProgress: ProgressEvent | null }
   | { kind: "ready"; dossier: Dossier };
 
 export default function App() {
@@ -52,20 +66,32 @@ function Footer() {
 
 function HomeRoute() {
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
+  // Track the most recent progress in a ref so the error handler can capture it.
+  // (State is async; reading phase from the closure inside onError would be stale.)
+  const lastProgressRef = useRef<ProgressEvent | null>(null);
 
   async function handleSubmit(claim: string, context: string | undefined) {
+    lastProgressRef.current = null;
     setPhase({ kind: "loading", progress: null });
     await streamDossier(
       { claim, context },
       {
-        onProgress: (event) => setPhase({ kind: "loading", progress: event }),
+        onProgress: (event) => {
+          lastProgressRef.current = event;
+          setPhase({ kind: "loading", progress: event });
+        },
         onDone: (dossier) => {
           // Navigate to the dossier's permalink so refresh + share work.
           navigate(buildDossierHash(dossier.id));
         },
-        onError: (message) => setPhase({ kind: "error", message }),
+        onError: (error) =>
+          setPhase({ kind: "error", error, lastProgress: lastProgressRef.current }),
       },
     );
+  }
+
+  function handleSuggestionClick(suggestion: string) {
+    handleSubmit(suggestion, undefined);
   }
 
   return (
@@ -75,10 +101,7 @@ function HomeRoute() {
       )}
 
       {phase.kind === "error" && (
-        <div className="mt-6 rounded border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
-          <p className="font-semibold">Something went wrong</p>
-          <p className="mt-1">{phase.message}</p>
-        </div>
+        <ErrorPanel error={phase.error} lastProgress={phase.lastProgress} onSuggestionClick={handleSuggestionClick} />
       )}
 
       {phase.kind === "loading" && (
@@ -95,6 +118,64 @@ function HomeRoute() {
         <HistoryList />
       </section>
     </>
+  );
+}
+
+interface ErrorPanelProps {
+  error: DossierError;
+  lastProgress: ProgressEvent | null;
+  onSuggestionClick: (suggestion: string) => void;
+}
+
+function ErrorPanel({ error, lastProgress, onSuggestionClick }: ErrorPanelProps) {
+  if (error.kind === "claim_rejected") {
+    return (
+      <div className="mt-6 rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <p className="font-semibold">
+          {error.status === "too_vague" ? "Claim is too vague to investigate" : "Not a factual claim"}
+        </p>
+        <p className="mt-1">{error.reason}</p>
+        {error.suggestions.length > 0 && (
+          <>
+            <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-amber-700">
+              Try one of these instead
+            </p>
+            <ul className="mt-1 space-y-1.5">
+              {error.suggestions.map((s) => (
+                <li key={s}>
+                  <button
+                    type="button"
+                    onClick={() => onSuggestionClick(s)}
+                    className="block w-full rounded border border-amber-300 bg-white px-3 py-2 text-left text-sm text-slate-800 hover:bg-amber-100"
+                  >
+                    {s}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // Generic failure — show last step reached so the user can tell where it broke.
+  return (
+    <div className="mt-6 rounded border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
+      <p className="font-semibold">Something went wrong</p>
+      <p className="mt-1">{error.message}</p>
+      {lastProgress && (
+        <p className="mt-2 text-xs text-rose-700">
+          Failed at: <span className="font-medium">{PROGRESS_STEP_LABELS[lastProgress.step]}</span>
+          {lastProgress.sublabel && <> ({lastProgress.sublabel})</>}
+        </p>
+      )}
+      {error.requestId && (
+        <p className="mt-2 text-xs text-rose-700">
+          Request ID: <code className="font-mono">{error.requestId}</code>
+        </p>
+      )}
+    </div>
   );
 }
 

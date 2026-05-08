@@ -16,7 +16,7 @@ const MAX_FULL_TEXT_CHARS = 20_000;
 const MIN_TEXT_FOR_NO_PAYWALL = 400;
 
 const USER_AGENT =
-  "Mozilla/5.0 (compatible; Crux/0.1; +https://github.com/) civic-fact-verification";
+  "Mozilla/5.0 (compatible; Crux/0.1; +https://github.com/davidsimonesq/crux) civic-fact-verification";
 
 const PAYWALL_MARKERS = [
   "subscribe to continue",

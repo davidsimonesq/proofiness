@@ -122,7 +122,12 @@ export interface SubClaim {
   id: string;
   text: string;
   type: ClaimType;
-  searchQuery: string;
+  // Multi-framing search per spec §3.3: 3-4 queries with deliberately varied
+  // framings (neutral / supportive / skeptical / technical / historical) — a
+  // direct countermeasure to confirmation bias and SEO bubbles. The dossier
+  // pipeline runs these in parallel and dedupes results by URL.
+  // Empty array for sub-claims that aren't searchable (definitional/value).
+  searchQueries: string[];
   sources: Source[];
   // Only generated for sub-claims where evidence can speak both ways
   // (empirical_fact, causal, comparative, prediction). Skipped for
@@ -180,6 +185,7 @@ export interface ApiError {
 // so the UI can map them to a step indicator. `sublabel` is optional context
 // (e.g. "3 sub-claims" or "tracing nytimes.com").
 export type ProgressStep =
+  | "normalizing"
   | "decomposing"
   | "searching"
   | "fetching"
@@ -201,4 +207,12 @@ export interface DossierSummary {
   id: string;
   claim: string;
   createdAt: string;
+}
+
+// Cursor-paginated response. nextCursor is null when there are no more rows.
+// Cursor is opaque to the client — pass it back unchanged in `?cursor=` to get
+// the next page.
+export interface DossierList {
+  dossiers: DossierSummary[];
+  nextCursor: string | null;
 }

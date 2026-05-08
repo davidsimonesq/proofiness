@@ -81,7 +81,31 @@ Output:
 }
 ```
 
-## Example 2 — magnitude crux
+## Example 2 — left-coded definitional crux (paired with Example 1 to keep claim-selection symmetric)
+
+Input:
+```json
+{
+  "claim": "Defunding the police would reduce harm.",
+  "subClaims": [
+    {"id": "sc1", "text": "Some U.S. cities reduced police department budgets in 2020-2022.", "type": "empirical_fact", "contestation": "empirically_settled"},
+    {"id": "sc2", "text": "Crime and police-related harm changed in those cities relative to comparison cities during that period.", "type": "empirical_fact", "contestation": "contested_with_evidence"},
+    {"id": "sc3", "text": "The changes in crime and harm were caused by the budget reductions rather than other concurrent factors (pandemic, civil unrest, prosecutor changes).", "type": "causal", "contestation": "contested_with_evidence"},
+    {"id": "sc4", "text": "'Defunding' refers to specific budget reductions, vs. complete abolition, vs. reallocation to social services and mental-health response.", "type": "definitional", "contestation": "definitional_dispute"},
+    {"id": "sc5", "text": "'Harm' includes police violence against civilians, civilian crime victimization, perceived community safety, racial disparities in enforcement, or some weighting of these.", "type": "definitional", "contestation": "definitional_dispute"}
+  ]
+}
+```
+
+Output:
+```json
+{
+  "hingesOn": ["sc4", "sc5"],
+  "summary": "The fact of 2020-2022 police budget reductions is settled, but the empirical sub-claims about effects (sc2, sc3) are genuinely contested and cannot be evaluated until two definitional questions are resolved: what 'defunding' means (modest reductions vs. abolition vs. reallocation produce different policies and different effects) and what 'harm' counts (police violence vs. crime victimization point opposite directions in much of the evidence)."
+}
+```
+
+## Example 3 — magnitude crux
 
 Input:
 ```json
@@ -104,7 +128,7 @@ Output:
 }
 ```
 
-## Example 3 — value-laden bottom (nothing hinges empirically)
+## Example 4 — value-laden bottom (nothing hinges empirically)
 
 Input:
 ```json

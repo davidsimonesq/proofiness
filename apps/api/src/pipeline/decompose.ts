@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { z } from "zod";
 import type { ClaimType } from "@crux/shared-types";
-import { getAnthropic } from "../lib/anthropic.js";
+import { getAnthropic, logAnthropicError } from "../lib/anthropic.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROMPT_PATH = join(__dirname, "..", "prompts", "decompose.md");
@@ -24,13 +24,16 @@ const ClaimTypeSchema = z.enum([
   "comparative",
 ]);
 
+// `searchQueries` is an array per spec §3.3 (multi-framing search). Empty array
+// is valid for non-searchable sub-claims (definitional / value_judgment).
+// Cap at 5 to bound cost — anything beyond 5 framings is over-design.
 const DecompositionSchema = z.object({
   subClaims: z
     .array(
       z.object({
         text: z.string().min(1),
         type: ClaimTypeSchema,
-        searchQuery: z.string(),
+        searchQueries: z.array(z.string()).max(5).default([]),
       }),
     )
     .min(1),
@@ -56,19 +59,27 @@ export async function decompose(claim: string, context?: string): Promise<Decomp
 
   const userBody = context ? `Claim: ${claim}\n\nWhere the user encountered it: ${context}` : `Claim: ${claim}`;
 
-  const response = await client.messages.create({
-    model,
-    max_tokens: 4096,
-    // Cache the system prompt — it's reused across every decomposition request.
-    system: [
-      {
-        type: "text",
-        text: system,
-        cache_control: { type: "ephemeral" },
-      },
-    ],
-    messages: [{ role: "user", content: userBody }],
-  });
+  let response;
+  try {
+    response = await client.messages.create({
+      model,
+      max_tokens: 4096,
+      // Cache the system prompt — it's reused across every decomposition request.
+      system: [
+        {
+          type: "text",
+          text: system,
+          cache_control: { type: "ephemeral" },
+        },
+      ],
+      messages: [{ role: "user", content: userBody }],
+    });
+  } catch (err) {
+    const cat = logAnthropicError("decompose", claim.slice(0, 80), err);
+    // Decompose is the load-bearing first step — propagate so the SSE error
+    // event surfaces a clear category-tagged failure to the user.
+    throw new Error(`Decomposition failed (${cat.category}): ${cat.message}`);
+  }
 
   const textBlock = response.content.find((b) => b.type === "text");
   if (!textBlock || textBlock.type !== "text") {

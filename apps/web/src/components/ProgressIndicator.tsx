@@ -3,6 +3,7 @@ import type { ProgressEvent, ProgressStep } from "@crux/shared-types";
 // Order matches the pipeline. Steps not yet reached render dim; the in-flight
 // step is highlighted; completed steps render as a checkmark color.
 const STEP_ORDER: ProgressStep[] = [
+  "normalizing",
   "decomposing",
   "searching",
   "fetching",
@@ -15,6 +16,7 @@ const STEP_ORDER: ProgressStep[] = [
 ];
 
 const STEP_LABELS: Record<ProgressStep, string> = {
+  normalizing: "Normalize",
   decomposing: "Decompose",
   searching: "Search",
   fetching: "Fetch sources",

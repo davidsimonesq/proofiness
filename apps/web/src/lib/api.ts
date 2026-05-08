@@ -2,14 +2,29 @@ import type {
   CreateDossierRequest,
   CreateDossierResponse,
   Dossier,
-  DossierSummary,
+  DossierList,
   ProgressEvent,
 } from "@crux/shared-types";
+
+// Structured error variants the client can render distinctly.
+//   - "claim_rejected": normalization refused the claim; suggestions present
+//   - "generic": pipeline failure or any other error
+// requestId is server-generated (Fastify reqId) and lets the user grep server
+// logs for a specific failure when reporting an issue.
+export type DossierError =
+  | {
+      kind: "claim_rejected";
+      status: "too_vague" | "not_a_claim";
+      reason: string;
+      suggestions: string[];
+      requestId?: string;
+    }
+  | { kind: "generic"; message: string; requestId?: string };
 
 interface StreamHandlers {
   onProgress: (event: ProgressEvent) => void;
   onDone: (dossier: Dossier) => void;
-  onError: (message: string) => void;
+  onError: (err: DossierError) => void;
 }
 
 // Streaming dossier generation. Consumes the SSE response line-by-line and
@@ -29,7 +44,7 @@ export async function streamDossier(
     });
   } catch (err) {
     if ((err as Error).name === "AbortError") return;
-    handlers.onError(err instanceof Error ? err.message : String(err));
+    handlers.onError({ kind: "generic", message: err instanceof Error ? err.message : String(err) });
     return;
   }
 
@@ -41,12 +56,12 @@ export async function streamDossier(
     } catch {
       detail = await res.text().catch(() => "");
     }
-    handlers.onError(`Request failed (${res.status}): ${detail || "unknown error"}`);
+    handlers.onError({ kind: "generic", message: `Request failed (${res.status}): ${detail || "unknown error"}` });
     return;
   }
 
   if (!res.body) {
-    handlers.onError("No response body to stream");
+    handlers.onError({ kind: "generic", message: "No response body to stream" });
     return;
   }
 
@@ -70,7 +85,7 @@ export async function streamDossier(
     }
   } catch (err) {
     if ((err as Error).name !== "AbortError") {
-      handlers.onError(err instanceof Error ? err.message : String(err));
+      handlers.onError({ kind: "generic", message: err instanceof Error ? err.message : String(err) });
     }
   } finally {
     reader.releaseLock();
@@ -92,7 +107,7 @@ function dispatchSseEvent(rawEvent: string, handlers: StreamHandlers): void {
   try {
     data = JSON.parse(dataStr);
   } catch {
-    handlers.onError(`Malformed event data: ${dataStr.slice(0, 200)}`);
+    handlers.onError({ kind: "generic", message: `Malformed event data: ${dataStr.slice(0, 200)}` });
     return;
   }
 
@@ -106,8 +121,28 @@ function dispatchSseEvent(rawEvent: string, handlers: StreamHandlers): void {
       break;
     }
     case "error": {
-      const { error, detail } = data as { error?: string; detail?: string };
-      handlers.onError(detail ?? error ?? "unknown error");
+      const body = data as {
+        error?: string;
+        detail?: string;
+        suggestions?: string[];
+        requestId?: string;
+      };
+      // Structured rejection from the normalize step — surface the suggestions.
+      if (body.error === "too_vague" || body.error === "not_a_claim") {
+        handlers.onError({
+          kind: "claim_rejected",
+          status: body.error,
+          reason: body.detail ?? "The claim couldn't be processed.",
+          suggestions: body.suggestions ?? [],
+          requestId: body.requestId,
+        });
+      } else {
+        handlers.onError({
+          kind: "generic",
+          message: body.detail ?? body.error ?? "unknown error",
+          requestId: body.requestId,
+        });
+      }
       break;
     }
     default:
@@ -127,9 +162,13 @@ export async function getDossier(id: string): Promise<Dossier> {
   return body.dossier;
 }
 
-export async function listDossiers(): Promise<DossierSummary[]> {
-  const res = await fetch("/api/dossiers");
+export async function listDossiers(opts: { cursor?: string; limit?: number } = {}): Promise<DossierList> {
+  const params = new URLSearchParams();
+  if (opts.cursor) params.set("cursor", opts.cursor);
+  if (opts.limit) params.set("limit", String(opts.limit));
+  const qs = params.toString();
+  const url = qs ? `/api/dossiers?${qs}` : "/api/dossiers";
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to load history (${res.status})`);
-  const body = (await res.json()) as { dossiers: DossierSummary[] };
-  return body.dossiers;
+  return (await res.json()) as DossierList;
 }

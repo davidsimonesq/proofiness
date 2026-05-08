@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { z } from "zod";
 import type { Crux, SubClaim } from "@crux/shared-types";
-import { getAnthropic } from "../lib/anthropic.js";
+import { getAnthropic, logAnthropicError } from "../lib/anthropic.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROMPT_PATH = join(__dirname, "..", "prompts", "crux.md");
@@ -78,8 +78,7 @@ export async function identifyCrux({ claim, subClaims }: IdentifyCruxInput): Pro
       messages: [{ role: "user", content: userBody }],
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[crux] LLM call failed: ${msg}`);
+    logAnthropicError("crux", claim.slice(0, 80), err);
     return null;
   }
 
@@ -101,9 +100,43 @@ export async function identifyCrux({ claim, subClaims }: IdentifyCruxInput): Pro
     return null;
   }
 
-  // Defense in depth: drop any hingesOn ids the model invented that aren't real sub-claims.
-  return {
-    hingesOn: parsed.data.hingesOn.filter((id) => validIds.has(id)),
-    summary: parsed.data.summary,
-  };
+  // Defense in depth #1: drop any hingesOn ids the model invented that aren't
+  // real sub-claims.
+  const hingesOn = parsed.data.hingesOn.filter((id) => validIds.has(id));
+
+  // Defense in depth #2: verdict-shape guard. The crux summary is the highest-
+  // visibility surface in the dossier and the most prone to verdict drift. If
+  // it contains banned phrases, replace with a structural fallback rather than
+  // ship a verdict-by-proxy at the top of the page.
+  const summary = guardVerdictLanguage(parsed.data.summary, hingesOn.length);
+
+  return { hingesOn, summary };
+}
+
+// Phrases that turn the structural summary into a verdict-by-proxy. These are
+// drawn from crux.md's "BAD summaries" list. Match is case-insensitive and
+// substring-based — broader than necessary, but the cost of a false positive
+// (replacing a fine summary with the fallback) is much lower than the cost of
+// a false negative (shipping a verdict at the top of the dossier).
+const VERDICT_PHRASES = [
+  /\bon balance\b/i,
+  /\bweighs (in favor|against)\b/i,
+  /\b(more|most) likely (true|false)\b/i,
+  /\b(stronger|weaker) case\b/i,
+  /\b(stronger|weaker) (side|argument)\b/i,
+  /\bevidence (suggests|cuts|leans|favors|supports)\b/i,
+  /\bleans (toward|against)\b/i,
+  /\b(most|the) sources (support|cut against|favor)\b/i,
+  /\bthe (claim|evidence) is (likely|probably) (true|false)\b/i,
+];
+
+function guardVerdictLanguage(summary: string, hingeCount: number): string {
+  const matched = VERDICT_PHRASES.find((p) => p.test(summary));
+  if (!matched) return summary;
+  console.warn(
+    `[crux] verdict-shaped summary rejected (matched ${matched}): ${summary.slice(0, 200)}`,
+  );
+  return hingeCount === 0
+    ? "The dossier doesn't surface a single hinge — review the sub-claims below to weigh the evidence."
+    : "The strength of this claim depends on the sub-claim(s) marked as crux below. Review them and the supporting sources to weigh the evidence yourself.";
 }

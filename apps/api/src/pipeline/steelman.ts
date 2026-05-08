@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { z } from "zod";
 import type { ClaimType, Source, Steelman } from "@crux/shared-types";
-import { getAnthropic } from "../lib/anthropic.js";
+import { getAnthropic, logAnthropicError } from "../lib/anthropic.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROMPT_PATH = join(__dirname, "..", "prompts", "steelman.md");
@@ -96,8 +96,7 @@ export async function generateSteelman({
       messages: [{ role: "user", content: userBody }],
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[steelman] LLM call failed for sub-claim ${JSON.stringify(subClaim)}: ${msg}`);
+    logAnthropicError("steelman", subClaim.slice(0, 80), err);
     return null;
   }
 

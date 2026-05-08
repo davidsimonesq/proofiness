@@ -132,6 +132,31 @@ Output:
 }
 ```
 
+## Example 5 — contested by faction (paired with Example 4 to keep this label politically symmetric)
+
+Input:
+```json
+{
+  "subClaim": "Approved genetically modified food crops currently on the market are safe to eat.",
+  "subClaimType": "empirical_fact",
+  "sourceTypes": ["institutional", "peer_reviewed", "government", "government"],
+  "steelman": {
+    "for": { "argument": "The U.S. National Academies of Sciences (2016 review of ~900 studies), AAAS, WHO, and EFSA all conclude approved GM crops are as safe as conventional counterparts; no pattern of adverse health effects has emerged in two decades of consumption [s1][s2][s3][s4].", "sourceCount": 4 },
+    "against": { "argument": "The available sources don't make a substantive case against. Critics raise concerns about long-term ecological effects, corporate concentration in the seed market, and labeling — but on the narrow safety-to-eat question, the cited sources concur.", "sourceCount": 0 }
+  }
+}
+```
+
+Output:
+```json
+{
+  "label": "contested_by_faction",
+  "note": "Major scientific bodies (National Academies, AAAS, WHO, EFSA) concur that approved GM foods on the market are safe to eat after extensive review. The empirical safety-to-eat question is closed in the scientific literature, but contestation persists in segments of public discourse — often entangled with separate concerns about corporate concentration, labeling, and ecological effects that the narrow sub-claim does not address."
+}
+```
+
+> **Why both Example 4 (anti-vax) and Example 5 (anti-GMO) are in this prompt:** the `contested_by_faction` label codes one side as "ignoring the science." That's a strong claim, and the label's credibility depends on applying it symmetrically. Vaccine skepticism is most visible on the political right; GMO skepticism is most visible on the political left. Both meet the same test — strong expert consensus + visible non-evidentiary contestation. If you find yourself willing to use this label for one but not the other, that's the asymmetry the self-audit guideline is meant to catch.
+
 # Now classify the user's sub-claim
 
 The user's input follows. Return ONLY the JSON object.

@@ -55,10 +55,7 @@ export function SubClaimCard({ subClaim, isCrux }: Props) {
         <h3 className="text-base font-semibold text-slate-900">{subClaim.text}</h3>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           {subClaim.contestation && (
-            <ContestationBadge
-              label={subClaim.contestation.label}
-              note={subClaim.contestation.note}
-            />
+            <ContestationBadge label={subClaim.contestation.label} />
           )}
           <span className="text-xs uppercase tracking-wide text-slate-500">
             {TYPE_LABELS[subClaim.type]}
@@ -70,16 +67,26 @@ export function SubClaimCard({ subClaim, isCrux }: Props) {
         <p className="mb-2 text-xs italic text-slate-600">{subClaim.contestation.note}</p>
       )}
 
-      {subClaim.searchQuery && (
-        <p className="mb-2 text-xs text-slate-500">
-          Searched: <span className="font-mono">{subClaim.searchQuery}</span>
-        </p>
+      {subClaim.searchQueries.length > 0 && (
+        <details className="mb-2 text-xs text-slate-500">
+          <summary className="cursor-pointer">
+            Searched: {subClaim.searchQueries.length}{" "}
+            {subClaim.searchQueries.length === 1 ? "framing" : "framings"}
+          </summary>
+          <ul className="mt-1 list-disc space-y-0.5 pl-5">
+            {subClaim.searchQueries.map((q, i) => (
+              <li key={i} className="font-mono">
+                {q}
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
 
       {subClaim.sources.length === 0 ? (
         <p className="text-sm italic text-slate-500">
-          {subClaim.searchQuery
-            ? "No sources returned for this sub-claim."
+          {subClaim.searchQueries.length > 0
+            ? "No sources returned for this sub-claim across all framings."
             : "Not searchable — this sub-claim is not the kind of question evidence resolves."}
         </p>
       ) : (
@@ -129,7 +136,11 @@ export function SubClaimCard({ subClaim, isCrux }: Props) {
       )}
 
       {subClaim.steelman && (
-        <SteelmanPair steelman={subClaim.steelman} sources={subClaim.sources} />
+        <SteelmanPair
+          steelman={subClaim.steelman}
+          sources={subClaim.sources}
+          subClaimId={subClaim.id}
+        />
       )}
     </article>
   );

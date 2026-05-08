@@ -2,7 +2,8 @@ import type { FastifyInstance, FastifyReply } from "fastify";
 import { z } from "zod";
 import type { ProgressEvent } from "@crux/shared-types";
 import { assembleDossier } from "../pipeline/assemble-dossier.js";
-import { saveDossier, getDossier, listDossiers } from "../lib/db.js";
+import { ClaimRejectedError } from "../pipeline/normalize.js";
+import { saveDossier, getDossier, listDossiers, type ListCursor } from "../lib/db.js";
 
 const CreateRequestSchema = z.object({
   claim: z.string().trim().min(3, "Claim is too short").max(4000, "Claim is too long"),
@@ -23,7 +24,15 @@ export async function dossierRoutes(app: FastifyInstance): Promise<void> {
   // Streaming dossier generation. Server emits progress events as the pipeline
   // runs and a final `done` event with the full dossier. Client uses fetch +
   // ReadableStream to consume.
-  app.post("/api/dossier", async (req, reply) => {
+  //
+  // Rate-limited tighter than the global default — each call burns 8-12 LLM
+  // calls + multiple search/fetch ops. 5/min/IP is enough for active solo dev,
+  // catches runaway clients before they drain Anthropic + Tavily credits.
+  app.post("/api/dossier", {
+    config: {
+      rateLimit: { max: 5, timeWindow: "1 minute" },
+    },
+  }, async (req, reply) => {
     const parsed = CreateRequestSchema.safeParse(req.body);
     if (!parsed.success) {
       return reply.code(400).send({
@@ -61,9 +70,24 @@ export async function dossierRoutes(app: FastifyInstance): Promise<void> {
       saveDossier(dossier);
       writeSse(reply, EVT_DONE, { dossier });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      req.log.error({ err }, "dossier assembly failed");
-      writeSse(reply, EVT_ERROR, { error: "dossier_failed", detail: msg });
+      // Normalization rejected the claim — emit a structured error the client
+      // can render with refinement suggestions, distinct from generic failure.
+      if (err instanceof ClaimRejectedError) {
+        writeSse(reply, EVT_ERROR, {
+          error: err.status, // "too_vague" | "not_a_claim"
+          detail: err.reason,
+          suggestions: err.suggestions,
+          requestId: req.id,
+        });
+      } else {
+        const msg = err instanceof Error ? err.message : String(err);
+        req.log.error({ err }, "dossier assembly failed");
+        writeSse(reply, EVT_ERROR, {
+          error: "dossier_failed",
+          detail: msg,
+          requestId: req.id,
+        });
+      }
     } finally {
       clearInterval(heartbeat);
       reply.raw.end();
@@ -79,8 +103,43 @@ export async function dossierRoutes(app: FastifyInstance): Promise<void> {
     return { dossier };
   });
 
-  // List recent dossiers (history view). Returns summaries only.
-  app.get("/api/dossiers", async () => {
-    return { dossiers: listDossiers(100) };
-  });
+  // List recent dossiers (history view). Cursor-paginated. Cursor is opaque
+  // base64-encoded JSON of (createdAt, id); clients pass it back unchanged.
+  app.get<{ Querystring: { cursor?: string; limit?: string } }>(
+    "/api/dossiers",
+    async (req, reply) => {
+      const limit = req.query.limit ? Number.parseInt(req.query.limit, 10) : undefined;
+      let cursor: ListCursor | null = null;
+      if (req.query.cursor) {
+        const decoded = decodeCursor(req.query.cursor);
+        if (!decoded) {
+          return reply
+            .code(400)
+            .send({ error: "invalid_cursor", detail: "cursor is malformed" });
+        }
+        cursor = decoded;
+      }
+      const page = listDossiers({ limit, cursor });
+      return {
+        dossiers: page.rows,
+        nextCursor: page.nextCursor ? encodeCursor(page.nextCursor) : null,
+      };
+    },
+  );
+}
+
+function encodeCursor(c: ListCursor): string {
+  return Buffer.from(JSON.stringify(c), "utf8").toString("base64url");
+}
+
+function decodeCursor(s: string): ListCursor | null {
+  try {
+    const decoded = JSON.parse(Buffer.from(s, "base64url").toString("utf8")) as ListCursor;
+    if (typeof decoded.createdAt === "string" && typeof decoded.id === "string") {
+      return decoded;
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }

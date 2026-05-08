@@ -8,6 +8,7 @@ import type {
   SubClaim,
 } from "@crux/shared-types";
 import { decompose } from "./decompose.js";
+import { normalize } from "./normalize.js";
 import { searchForSubClaim } from "./search.js";
 import { type FetchResult } from "./fetch.js";
 import { classifySources, type ClassifyInput } from "./classify.js";
@@ -36,8 +37,15 @@ export async function assembleDossier(
   context?: string,
   emit: ProgressEmitter = NOOP_EMIT,
 ): Promise<Dossier> {
+  // Step 0: normalize. Strip rhetoric, identify core assertion, refuse vague
+  // claims with concrete refinement suggestions (per spec §3.1). If the claim
+  // is too vague or isn't a claim, this throws ClaimRejectedError, which the
+  // route handler surfaces to the client as a structured SSE error event.
+  emit({ step: "normalizing", message: "Checking claim for clarity…" });
+  const normalized = await normalize(claim);
+
   emit({ step: "decomposing", message: "Decomposing claim into sub-claims…" });
-  const decomposition = await decompose(claim, context);
+  const decomposition = await decompose(normalized, context);
 
   // Step 1: search per sub-claim, in parallel.
   emit({
@@ -47,7 +55,7 @@ export async function assembleDossier(
   });
   const subClaimsRaw = await Promise.all(
     decomposition.subClaims.map(async (sc) => {
-      const hits = await searchForSubClaim(sc.searchQuery);
+      const hits = await searchForSubClaim(sc.searchQueries);
       const rawHits: RawHit[] = hits.map((hit) => ({ hitId: randomUUID(), hit }));
       return { sc, rawHits };
     }),
@@ -101,7 +109,7 @@ export async function assembleDossier(
       id: randomUUID(),
       text: sc.text,
       type: sc.type,
-      searchQuery: sc.searchQuery,
+      searchQueries: sc.searchQueries,
       sources,
     };
   });
@@ -200,7 +208,11 @@ export async function assembleDossier(
 
   return {
     id: randomUUID(),
-    claim,
+    // Persist the normalized claim — that's what the dossier was actually built
+    // around, and the user should see what got investigated. The original
+    // input is implicit (the user typed it; if they want to see it, they have
+    // it in their browser).
+    claim: normalized,
     context,
     createdAt: new Date().toISOString(),
     subClaims,

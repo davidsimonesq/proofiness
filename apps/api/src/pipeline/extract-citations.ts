@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { z } from "zod";
 import type { ResolutionMethod } from "@crux/shared-types";
-import { getAnthropic } from "../lib/anthropic.js";
+import { getAnthropic, logAnthropicError } from "../lib/anthropic.js";
 import type { OutboundLink } from "./fetch.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -91,8 +91,7 @@ export async function inferFromProse(bodyText: string): Promise<CitationCandidat
       ],
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[extract-citations] LLM call failed: ${msg}`);
+    logAnthropicError("extract-citations", `body ${bodyText.length} chars`, err);
     return [];
   }
 

@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { z } from "zod";
 import type { ClassifierUsed, SourceType } from "@crux/shared-types";
-import { getAnthropic } from "../lib/anthropic.js";
+import { getAnthropic, logAnthropicError } from "../lib/anthropic.js";
 import { classifyByDomain } from "../lib/source-rules.js";
 import { classifyCache } from "../lib/cache.js";
 
@@ -83,8 +83,7 @@ export async function classifySources(inputs: ClassifyInput[]): Promise<Classifi
   try {
     llmResults = await classifyViaLlm(unknownInputs);
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[classify] LLM batch failed (${unknownInputs.length} sources): ${msg}`);
+    logAnthropicError("classify", `${unknownInputs.length} sources`, err);
     // Leave the rule-misses as unknown/fallback. The dossier still ships.
     return ruled;
   }

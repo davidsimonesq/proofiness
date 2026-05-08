@@ -78,9 +78,10 @@ const RULES: DomainRule[] = [
   { pattern: /(^|\.)osf\.io$/i, type: "primary_research" },
 
   // ─── Wire services + major news (secondary reporting) ─────────────────────
-  // NOTE: opinion/editorial content on these same domains will be handled by
-  // the LLM classifier — the rule fires first but Phase 2 ships rule-only
-  // for these. Phase 3+ may need URL-path heuristics (/opinion/, /editorial/).
+  // NOTE: opinion/editorial content on these same domains is handled by the
+  // OPINION_PATH_PATTERNS check at the bottom of this file — that runs BEFORE
+  // these rules, so /opinion/, /editorial/, /op-ed/, /columnists/ paths get
+  // classified as `opinion` instead of `secondary_reporting`.
   { pattern: /(^|\.)reuters\.com$/i, type: "secondary_reporting" },
   { pattern: /(^|\.)apnews\.com$/i, type: "secondary_reporting" },
   { pattern: /(^|\.)ap\.org$/i, type: "secondary_reporting" },
@@ -98,9 +99,14 @@ const RULES: DomainRule[] = [
   { pattern: /(^|\.)bloomberg\.com$/i, type: "secondary_reporting" },
   { pattern: /(^|\.)cnn\.com$/i, type: "secondary_reporting" },
   { pattern: /(^|\.)foxnews\.com$/i, type: "secondary_reporting" },
+  { pattern: /(^|\.)msnbc\.com$/i, type: "secondary_reporting" },
   { pattern: /(^|\.)nbcnews\.com$/i, type: "secondary_reporting" },
   { pattern: /(^|\.)cbsnews\.com$/i, type: "secondary_reporting" },
   { pattern: /(^|\.)abcnews\.go\.com$/i, type: "secondary_reporting" },
+  { pattern: /(^|\.)usatoday\.com$/i, type: "secondary_reporting" },
+  { pattern: /(^|\.)nypost\.com$/i, type: "secondary_reporting" },
+  { pattern: /(^|\.)washingtontimes\.com$/i, type: "secondary_reporting" },
+  { pattern: /(^|\.)washingtonexaminer\.com$/i, type: "secondary_reporting" },
   { pattern: /(^|\.)politico\.com$/i, type: "secondary_reporting" },
   { pattern: /(^|\.)axios\.com$/i, type: "secondary_reporting" },
   { pattern: /(^|\.)thehill\.com$/i, type: "secondary_reporting" },
@@ -149,11 +155,40 @@ function normalizeHostname(url: string): string | null {
   }
 }
 
+// URL-path patterns that indicate opinion/editorial content. Checked before
+// the news-outlet rule so that nytimes.com/opinion/... is classified as
+// `opinion` rather than `secondary_reporting`. The classify.md prompt
+// explicitly says "Use `opinion` ONLY when the URL path or title clearly
+// marks the piece" — this enforces that on the rule path too.
+const OPINION_PATH_PATTERNS = [
+  /\/opinion\//i,
+  /\/opinions\//i,
+  /\/editorial\//i,
+  /\/editorials\//i,
+  /\/op-?ed\//i,
+  /\/columnists?\//i,
+  /\/perspectives?\//i,
+];
+
+function isOpinionPath(url: string): boolean {
+  try {
+    const path = new URL(url).pathname;
+    return OPINION_PATH_PATTERNS.some((p) => p.test(path));
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Returns a SourceType if the URL's hostname matches a curated rule,
- * or null if no rule matches (in which case the LLM classifier should run).
+ * Returns a SourceType if the URL matches a curated rule, or null if no rule
+ * matches (in which case the LLM classifier should run).
+ *
+ * Order:
+ *   1. Opinion-path detection — wins over the news-outlet rule.
+ *   2. Domain rules (news outlets, journals, government, social, etc.).
  */
 export function classifyByDomain(url: string): SourceType | null {
+  if (isOpinionPath(url)) return "opinion";
   const host = normalizeHostname(url);
   if (!host) return null;
   for (const rule of RULES) {
