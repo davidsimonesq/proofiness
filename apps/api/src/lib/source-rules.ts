@@ -18,7 +18,7 @@
 // for political balance"). Same applies here: this list is part of the
 // classification surface and lives or dies in the same way prompts do.
 
-import type { SourceType } from "@crux/shared-types";
+import type { SourceType } from "@proofiness/shared-types";
 
 interface DomainRule {
   // Matches against the registrable hostname (no leading "www.").

@@ -1,7 +1,5 @@
-import type { ProgressEvent, ProgressStep } from "@crux/shared-types";
+import type { ProgressEvent, ProgressStep } from "@proofiness/shared-types";
 
-// Order matches the pipeline. Steps not yet reached render dim; the in-flight
-// step is highlighted; completed steps render as a checkmark color.
 const STEP_ORDER: ProgressStep[] = [
   "normalizing",
   "decomposing",
@@ -16,16 +14,16 @@ const STEP_ORDER: ProgressStep[] = [
 ];
 
 const STEP_LABELS: Record<ProgressStep, string> = {
-  normalizing: "Normalize",
-  decomposing: "Decompose",
-  searching: "Search",
-  fetching: "Fetch sources",
-  classifying_sources: "Classify",
+  normalizing: "Normalize claim",
+  decomposing: "Decompose into sub-claims",
+  searching: "Multi-framing search",
+  fetching: "Fetch + extract",
+  classifying_sources: "Classify sources",
   tracing_provenance: "Trace provenance",
-  generating_steelmans: "Steelman",
-  classifying_contestation: "Contestation",
+  generating_steelmans: "Steelman pairs",
+  classifying_contestation: "Contestation labels",
   identifying_crux: "Identify crux",
-  persisting: "Save",
+  persisting: "Persist dossier",
 };
 
 interface Props {
@@ -36,49 +34,80 @@ export function ProgressIndicator({ current }: Props) {
   const currentIdx = current ? STEP_ORDER.indexOf(current.step) : -1;
 
   return (
-    <div className="rounded border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="mb-3 text-sm text-slate-700">
-        {current ? current.message : "Starting…"}
-        {current?.sublabel && (
-          <span className="ml-1 text-slate-500">— {current.sublabel}</span>
-        )}
-      </p>
-      <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-        {STEP_ORDER.map((step, idx) => {
-          const status =
-            idx < currentIdx
-              ? "done"
-              : idx === currentIdx
-                ? "active"
-                : "pending";
-          const dotClass =
-            status === "done"
-              ? "bg-slate-700"
-              : status === "active"
-                ? "bg-slate-900 animate-pulse"
-                : "bg-slate-300";
-          const labelClass =
-            status === "done"
-              ? "text-slate-600"
-              : status === "active"
-                ? "font-semibold text-slate-900"
-                : "text-slate-400";
-          return (
-            <li key={step} className="flex items-center gap-1.5">
-              <span className={`inline-block h-2 w-2 rounded-full ${dotClass}`} aria-hidden="true" />
-              <span className={labelClass}>{STEP_LABELS[step]}</span>
-              {idx < STEP_ORDER.length - 1 && (
-                <span className="text-slate-300" aria-hidden="true">
-                  ›
+    <div className="border border-stone-400 bg-white">
+      <div className="border-b border-stone-300 bg-stone-100 px-4 py-2">
+        <span className="pf-label-loud">Pipeline · in progress</span>
+      </div>
+      <div className="p-4">
+        <p className="mb-4 font-serif text-sm leading-relaxed text-stone-800">
+          {current ? current.message : "Starting…"}
+          {current?.sublabel && (
+            <span className="text-stone-500"> — {current.sublabel}</span>
+          )}
+        </p>
+
+        <ol className="space-y-1">
+          {STEP_ORDER.map((step, idx) => {
+            const status =
+              idx < currentIdx
+                ? "done"
+                : idx === currentIdx
+                  ? "active"
+                  : "pending";
+            return (
+              <li
+                key={step}
+                className={`flex items-center gap-3 border-l-2 py-1 pl-3 ${
+                  status === "active"
+                    ? "border-ink bg-stone-100"
+                    : status === "done"
+                      ? "border-stone-500"
+                      : "border-stone-300"
+                }`}
+              >
+                <span
+                  className={`font-mono text-[0.7rem] uppercase tracking-widish ${
+                    status === "active"
+                      ? "text-ink"
+                      : status === "done"
+                        ? "text-stone-600"
+                        : "text-stone-400"
+                  }`}
+                >
+                  {String(idx + 1).padStart(2, "0")}
                 </span>
-              )}
-            </li>
-          );
-        })}
-      </ol>
-      <p className="mt-3 text-xs italic text-slate-500">
-        Cold dossiers take 60–140 seconds — the pipeline is making real searches and LLM calls.
-      </p>
+                <span
+                  className={`font-display text-xs font-semibold uppercase tracking-widish ${
+                    status === "active"
+                      ? "text-ink"
+                      : status === "done"
+                        ? "text-stone-700"
+                        : "text-stone-400"
+                  }`}
+                >
+                  {STEP_LABELS[step]}
+                </span>
+                <span
+                  className={`ml-auto font-mono text-[0.65rem] uppercase tracking-widish ${
+                    status === "active"
+                      ? "text-ink"
+                      : status === "done"
+                        ? "text-stone-500"
+                        : "text-stone-300"
+                  }`}
+                  aria-hidden="true"
+                >
+                  {status === "active" ? "▶" : status === "done" ? "✓" : "·"}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+
+        <p className="mt-4 border-t border-stone-300 pt-3 font-serif text-xs italic leading-relaxed text-stone-600">
+          Cold dossiers take 60–180 seconds. The pipeline is making real searches and LLM calls.
+        </p>
+      </div>
     </div>
   );
 }

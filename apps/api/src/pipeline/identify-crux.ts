@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { z } from "zod";
-import type { Crux, SubClaim } from "@crux/shared-types";
+import type { Crux, SubClaim } from "@proofiness/shared-types";
 import { getAnthropic, logAnthropicError } from "../lib/anthropic.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));

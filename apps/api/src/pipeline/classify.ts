@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { z } from "zod";
-import type { ClassifierUsed, SourceType } from "@crux/shared-types";
+import type { ClassifierUsed, SourceType } from "@proofiness/shared-types";
 import { getAnthropic, logAnthropicError } from "../lib/anthropic.js";
 import { classifyByDomain } from "../lib/source-rules.js";
 import { classifyCache } from "../lib/cache.js";

@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { z } from "zod";
-import type { ProgressEvent } from "@crux/shared-types";
+import type { ProgressEvent } from "@proofiness/shared-types";
 import { assembleDossier } from "../pipeline/assemble-dossier.js";
 import { ClaimRejectedError } from "../pipeline/normalize.js";
 import { saveDossier, getDossier, listDossiers, type ListCursor } from "../lib/db.js";

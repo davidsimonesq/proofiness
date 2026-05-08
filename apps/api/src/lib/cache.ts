@@ -7,7 +7,7 @@
 import { LRUCache } from "lru-cache";
 import { fetchAndExtract, type FetchResult } from "../pipeline/fetch.js";
 import type { Classification } from "../pipeline/classify.js";
-import type { ProvenanceChain } from "@crux/shared-types";
+import type { ProvenanceChain } from "@proofiness/shared-types";
 
 // Article content can change but rarely matters for fact-checking; cache an hour.
 export const fetchCache = new LRUCache<string, FetchResult>({

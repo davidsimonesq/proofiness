@@ -1,19 +1,17 @@
-import type { ClassifierUsed, SourceType } from "@crux/shared-types";
+import type { ClassifierUsed, SourceType } from "@proofiness/shared-types";
 
 // Visual treatment is deliberately neutral — no green-equals-good color encoding.
-// Quality of evidence is the user's call. The badge tells them WHAT KIND of
-// source it is, not whether to trust it.
-
+// The badge tells the user WHAT KIND of source it is, not whether to trust it.
 const LABELS: Record<SourceType, string> = {
   unknown: "Unclassified",
   primary_research: "Primary research",
   peer_reviewed: "Peer-reviewed",
-  secondary_reporting: "Secondary reporting",
-  opinion: "Opinion / editorial",
-  government: "Government / official",
+  secondary_reporting: "Reporting",
+  opinion: "Opinion",
+  government: "Government",
   institutional: "Institutional",
   advocacy: "Advocacy",
-  social_media: "Social media",
+  social_media: "Social",
   aggregator: "Aggregator",
 };
 
@@ -33,16 +31,16 @@ export function SourceQualityBadge({ sourceType, classifierUsed }: Props) {
   return (
     <span
       title={title}
-      className="inline-flex items-center gap-1 rounded border border-slate-300 bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700"
+      className="inline-flex shrink-0 items-center gap-1 border border-stone-400 bg-stone-50 px-1.5 py-0.5 font-mono text-[0.65rem] uppercase tracking-widish text-stone-700"
     >
       <span>{LABELS[sourceType]}</span>
       {classifierUsed === "llm" && (
-        <span aria-hidden="true" className="text-slate-400">
+        <span aria-hidden="true" className="text-stone-400">
           ·AI
         </span>
       )}
       {classifierUsed === "fallback" && (
-        <span aria-hidden="true" className="text-slate-400">
+        <span aria-hidden="true" className="text-stone-400">
           ·?
         </span>
       )}

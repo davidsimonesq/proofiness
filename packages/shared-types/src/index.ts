@@ -1,4 +1,4 @@
-// Crux shared types — used by both web and api.
+// Proofiness shared types — used by both web and api.
 // Phase 2: source classification + readability fetch + paywall + dates.
 
 export type ClaimType =
@@ -141,6 +141,14 @@ export interface SubClaim {
 // Spec §3.7: "the answer to X depends on how we resolve Y" — that reframe is
 // the productive move in any contested factual debate. The summary is
 // STRUCTURAL (what depends on what), never EVALUATIVE (which side is right).
+//
+// NAMING: this interface (and the related CruxSummary component, identifyCrux
+// function, dossier.crux field, and prompts/crux.md) keeps the name `Crux` even
+// though the product was renamed from "Crux" to "Proofiness". These names refer
+// to the *crux of a claim* — a spec-§3.7 concept about which sub-claim hinges
+// the answer — not to the project. The product name lives in user-facing chrome
+// (wordmark, manifest, README) and package names (@proofiness/*); semantic
+// terms map to the spec.
 export interface Crux {
   // SubClaim.id values that, if their answer changed, would flip the
   // overall claim's strength. May be empty if nothing hinges (e.g., the

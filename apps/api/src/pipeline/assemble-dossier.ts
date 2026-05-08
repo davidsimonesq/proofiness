@@ -6,7 +6,7 @@ import type {
   Source,
   SourceType,
   SubClaim,
-} from "@crux/shared-types";
+} from "@proofiness/shared-types";
 import { decompose } from "./decompose.js";
 import { normalize } from "./normalize.js";
 import { searchForSubClaim } from "./search.js";

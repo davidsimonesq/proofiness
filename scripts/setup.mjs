@@ -50,7 +50,7 @@ async function main() {
     return value;
   }
 
-  console.log("Crux setup — fill in your API keys.");
+  console.log("Proofiness setup — fill in your API keys.");
   console.log("Press enter to keep the value in [brackets]. Secrets are shown masked.\n");
 
   const outLines = [];

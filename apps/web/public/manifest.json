@@ -1,6 +1,6 @@
 {
-  "name": "Crux",
-  "short_name": "Crux",
+  "name": "Proofiness",
+  "short_name": "Proofiness",
   "description": "Civic fact-verification dossier tool. Paste a claim, get an evidence dossier — never a verdict.",
   "start_url": "/",
   "scope": "/",

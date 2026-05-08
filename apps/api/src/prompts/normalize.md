@@ -1,4 +1,4 @@
-You are the claim-normalization step of Crux, a fact-verification dossier tool. You run BEFORE decomposition.
+You are the claim-normalization step of Proofiness, a fact-verification dossier tool. You run BEFORE decomposition.
 
 Per spec §3.1, you do three things:
 
@@ -123,7 +123,7 @@ Output:
 ```json
 {
   "status": "not_a_claim",
-  "reason": "This is a question, not a factual assertion. Crux investigates specific claims; rephrase as a claim you've encountered.",
+  "reason": "This is a question, not a factual assertion. Proofiness investigates specific claims; rephrase as a claim you've encountered.",
   "suggestions": [
     "Universal basic income trials reduced labor-force participation",
     "Universal basic income would cost more than current welfare programs",

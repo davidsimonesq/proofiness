@@ -1,5 +1,5 @@
 {
-  "name": "crux",
+  "name": "proofiness",
   "version": "0.1.0",
   "private": true,
   "description": "Civic fact-verification dossier tool",
@@ -9,10 +9,10 @@
   ],
   "scripts": {
     "setup": "node scripts/setup.mjs",
-    "dev:api": "npm -w @crux/api run dev",
-    "dev:web": "npm -w @crux/web run dev",
-    "build": "npm -w @crux/shared-types run build && npm -w @crux/api run build && npm -w @crux/web run build",
-    "typecheck": "npm -w @crux/shared-types run typecheck && npm -w @crux/api run typecheck && npm -w @crux/web run typecheck"
+    "dev:api": "npm -w @proofiness/api run dev",
+    "dev:web": "npm -w @proofiness/web run dev",
+    "build": "npm -w @proofiness/shared-types run build && npm -w @proofiness/api run build && npm -w @proofiness/web run build",
+    "typecheck": "npm -w @proofiness/shared-types run typecheck && npm -w @proofiness/api run typecheck && npm -w @proofiness/web run typecheck"
   },
   "devDependencies": {
     "typescript": "^5.6.3"

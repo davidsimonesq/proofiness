@@ -1,78 +1,125 @@
-import type { Dossier } from "@crux/shared-types";
+import type { Dossier } from "@proofiness/shared-types";
 import { SubClaimCard } from "./SubClaimCard.js";
 import { LimitsDisclosure } from "./LimitsDisclosure.js";
 import { CruxSummary } from "./CruxSummary.js";
 import { ShareButton } from "./ShareButton.js";
+import { SectionHeader } from "../App.js";
 
 interface Props {
   dossier: Dossier;
 }
 
+// Short fingerprint for the dossier id — gives the document a "case number"
+// feel without exposing the full UUID in the chrome.
+function shortId(id: string): string {
+  return id.replace(/-/g, "").slice(0, 8).toUpperCase();
+}
+
 export function DossierView({ dossier }: Props) {
   const cruxSet = new Set(dossier.crux?.hingesOn ?? []);
+  const generatedDate = new Date(dossier.createdAt);
 
   return (
-    <section className="space-y-6">
-      <header className="rounded border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Original claim</p>
-            <p className="mt-1 text-base text-slate-900">{dossier.claim}</p>
-          </div>
+    <article className="space-y-10">
+      {/* Document header — case-file masthead */}
+      <header className="border border-stone-400 bg-white">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-300 bg-stone-100 px-4 py-2">
+          <span className="pf-label-loud">Dossier · {shortId(dossier.id)}</span>
           <ShareButton dossierId={dossier.id} />
         </div>
-        {dossier.context && (
-          <>
-            <p className="mt-3 text-xs uppercase tracking-wide text-slate-500">Context</p>
-            <p className="mt-1 text-sm text-slate-700">{dossier.context}</p>
-          </>
-        )}
-        <p className="mt-3 text-xs text-slate-400">
-          Generated {new Date(dossier.createdAt).toLocaleString()}
-        </p>
+        <div className="space-y-4 p-5">
+          <div>
+            <p className="pf-label">Original claim</p>
+            <p className="mt-2 font-serif text-base leading-relaxed text-ink">{dossier.claim}</p>
+          </div>
+          {dossier.context && (
+            <div>
+              <p className="pf-label">Context (provided by user)</p>
+              <p className="mt-2 font-serif text-sm leading-relaxed text-stone-800">{dossier.context}</p>
+            </div>
+          )}
+          <div className="border-t border-stone-300 pt-3">
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-1 font-mono text-[0.7rem] uppercase tracking-widish text-stone-600 sm:grid-cols-4">
+              <Meta term="Generated" value={generatedDate.toLocaleDateString()} />
+              <Meta term="Time" value={generatedDate.toLocaleTimeString()} />
+              <Meta term="Sub-claims" value={String(dossier.subClaims.length)} />
+              <Meta
+                term="Crux"
+                value={
+                  dossier.crux?.hingesOn.length
+                    ? `${dossier.crux.hingesOn.length} hinge${dossier.crux.hingesOn.length === 1 ? "" : "s"}`
+                    : "—"
+                }
+              />
+            </dl>
+          </div>
+        </div>
       </header>
 
       {dossier.crux && <CruxSummary crux={dossier.crux} subClaims={dossier.subClaims} />}
 
       <LimitsDisclosure />
 
-      <div>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-700">
-          Decomposition ({dossier.subClaims.length} sub-claim
-          {dossier.subClaims.length === 1 ? "" : "s"})
-        </h2>
-        <div className="space-y-4">
-          {dossier.subClaims.map((sc) => (
-            <SubClaimCard key={sc.id} subClaim={sc} isCrux={cruxSet.has(sc.id)} />
+      <section>
+        <SectionHeader number="03" label={`Decomposition · ${dossier.subClaims.length} sub-claim${dossier.subClaims.length === 1 ? "" : "s"}`} />
+        <div className="space-y-5">
+          {dossier.subClaims.map((sc, i) => (
+            <SubClaimCard
+              key={sc.id}
+              subClaim={sc}
+              isCrux={cruxSet.has(sc.id)}
+              index={i + 1}
+            />
           ))}
         </div>
-      </div>
+      </section>
 
       {dossier.embeddedAssumptions.length > 0 && (
-        <div className="rounded border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-700">
-            Embedded assumptions
-          </h2>
-          <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
+        <section>
+          <SectionHeader number="04" label="Embedded assumptions" />
+          <ul className="border border-stone-300 bg-white">
             {dossier.embeddedAssumptions.map((a, i) => (
-              <li key={i}>{a}</li>
+              <li
+                key={i}
+                className="flex gap-3 border-b border-stone-200 px-4 py-3 last:border-b-0"
+              >
+                <span className="font-mono text-[0.7rem] uppercase tracking-widish text-stone-500">
+                  A·{String(i + 1).padStart(2, "0")}
+                </span>
+                <p className="font-serif text-sm leading-relaxed text-stone-800">{a}</p>
+              </li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
 
       {dossier.unresolvedQuestions.length > 0 && (
-        <div className="rounded border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-700">
-            Unresolved questions
-          </h2>
-          <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
+        <section>
+          <SectionHeader number="05" label="Unresolved questions" />
+          <ul className="border border-stone-300 bg-white">
             {dossier.unresolvedQuestions.map((q, i) => (
-              <li key={i}>{q}</li>
+              <li
+                key={i}
+                className="flex gap-3 border-b border-stone-200 px-4 py-3 last:border-b-0"
+              >
+                <span className="font-mono text-[0.7rem] uppercase tracking-widish text-stone-500">
+                  Q·{String(i + 1).padStart(2, "0")}
+                </span>
+                <p className="font-serif text-sm leading-relaxed text-stone-800">{q}</p>
+              </li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
-    </section>
+    </article>
+  );
+}
+
+function Meta({ term, value }: { term: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-stone-500">{term}</dt>
+      <dd className="text-ink">{value}</dd>
+    </div>
   );
 }

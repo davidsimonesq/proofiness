@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Source, Steelman, SteelmanSide } from "@crux/shared-types";
+import type { Source, Steelman, SteelmanSide } from "@proofiness/shared-types";
 
 interface Props {
   steelman: Steelman;
@@ -7,22 +7,16 @@ interface Props {
   // Used only to deterministically pick the side ordering (audit #15).
   // Identical visual treatment isn't enough — reading order encodes weight.
   // Hashing the sub-claim id mod 2 means: stable on refresh, but varies across
-  // sub-claims so there's no consistent for-first-or-against-first bias across
-  // the dossier.
+  // sub-claims so there's no consistent for-first-or-against-first bias.
   subClaimId: string;
 }
 
-// Tiny string hash. Not cryptographic; just needs to be deterministic and
-// reasonably distributed across the (1 bit) output space.
 function hashMod2(s: string): 0 | 1 {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
   return (h & 1) as 0 | 1;
 }
 
-// Renders a steelman as two stacked sections with IDENTICAL visual treatment.
-// No green/red, no "stronger side" indicator — both sides get the same neutral
-// frame. Per spec §4 (progressive disclosure), the pair is collapsed by default.
 export function SteelmanPair({ steelman, sources, subClaimId }: Props) {
   const [expanded, setExpanded] = useState(false);
 
@@ -37,27 +31,28 @@ export function SteelmanPair({ steelman, sources, subClaimId }: Props) {
   );
 
   return (
-    <div className="mt-3 rounded border border-slate-200 bg-slate-50">
+    <div className="mt-4 border border-stone-300 bg-stone-50">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center justify-between rounded px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-700 hover:bg-slate-100"
+        className="flex w-full items-center justify-between border-b border-stone-300 bg-stone-100 px-4 py-2 text-left hover:bg-stone-200"
         aria-expanded={expanded}
       >
-        <span>Steelman pair</span>
-        <span className="text-slate-400" aria-hidden="true">
-          {expanded ? "−" : "+"}
+        <span className="pf-label-loud">Steelman pair</span>
+        <span className="font-mono text-xs text-stone-500" aria-hidden="true">
+          {expanded ? "[ − ]" : "[ + ]"}
         </span>
       </button>
 
       {expanded && (
-        <div className="space-y-3 border-t border-slate-200 px-3 py-3">
+        <div className="space-y-4 p-4">
           {forFirst ? forBlock : againstBlock}
+          <div className="pf-hairline" />
           {forFirst ? againstBlock : forBlock}
-          <p className="pt-1 text-xs italic text-slate-500">
-            Both cases are constructed from the sources above. The strongest possible case for
-            either side may exist outside this dossier. Order is deterministic per sub-claim;
-            don't read it as ranking. You weigh them.
+          <p className="border-t border-stone-300 pt-3 font-serif text-xs italic leading-relaxed text-stone-600">
+            Both cases constructed from the sources above. Order is deterministic per sub-claim
+            — don't read it as ranking. The strongest possible case for either side may exist
+            outside this dossier. <span className="not-italic font-mono">You weigh them.</span>
           </p>
         </div>
       )}
@@ -74,22 +69,22 @@ interface SideProps {
 function SteelmanSideBlock({ label, side, sourceById }: SideProps) {
   return (
     <section>
-      <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
-        {label}
-      </h4>
-      <p className="text-sm text-slate-800">{renderArgumentWithCitations(side.argument, sourceById)}</p>
+      <h4 className="pf-label mb-2">{label}</h4>
+      <p className="font-serif text-sm leading-relaxed text-ink">
+        {renderArgumentWithCitations(side.argument, sourceById)}
+      </p>
       {side.sourceIds.length > 0 && (
-        <ul className="mt-2 space-y-0.5 text-xs text-slate-500">
+        <ul className="mt-3 space-y-1 border-l-2 border-stone-300 pl-3">
           {side.sourceIds.map((id) => {
             const s = sourceById.get(id);
             if (!s) return null;
             return (
-              <li key={id}>
+              <li key={id} className="font-mono text-xs">
                 <a
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-700 underline decoration-blue-300 underline-offset-2 hover:decoration-blue-700"
+                  className="text-stone-700 underline decoration-stone-400 underline-offset-2 hover:text-ink hover:decoration-ink"
                 >
                   {s.title}
                 </a>
@@ -102,8 +97,6 @@ function SteelmanSideBlock({ label, side, sourceById }: SideProps) {
   );
 }
 
-// Replace inline [s1] markers with clickable links to the matching source.
-// Falls back to the bracketed token if the id isn't in the source map.
 function renderArgumentWithCitations(text: string, sourceById: Map<string, Source>) {
   const parts: Array<string | { id: string; title: string; url: string }> = [];
   const re = /\[([a-z0-9-]+)\]/gi;
@@ -116,7 +109,7 @@ function renderArgumentWithCitations(text: string, sourceById: Map<string, Sourc
     if (src) {
       parts.push({ id, title: src.title, url: src.url });
     } else {
-      parts.push(m[0]); // Leave the literal [s7] if id is unknown
+      parts.push(m[0]);
     }
     lastIdx = m.index + m[0].length;
   }
@@ -131,7 +124,7 @@ function renderArgumentWithCitations(text: string, sourceById: Map<string, Sourc
         target="_blank"
         rel="noopener noreferrer"
         title={p.title}
-        className="text-blue-700 underline decoration-blue-300 underline-offset-2 hover:decoration-blue-700"
+        className="font-mono text-xs text-stone-700 underline decoration-stone-400 underline-offset-2 hover:text-ink hover:decoration-ink"
       >
         [{p.id}]
       </a>

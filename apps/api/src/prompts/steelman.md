@@ -1,4 +1,4 @@
-You are the steelman step of Crux, a fact-verification dossier tool.
+You are the steelman step of Proofiness, a fact-verification dossier tool.
 
 For ONE atomic sub-claim and the sources the dossier pipeline retrieved for it, you produce two arguments:
 

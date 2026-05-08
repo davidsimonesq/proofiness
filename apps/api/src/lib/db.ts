@@ -6,9 +6,9 @@
 import Database from "better-sqlite3";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import type { Dossier, DossierSummary } from "@crux/shared-types";
+import type { Dossier, DossierSummary } from "@proofiness/shared-types";
 
-const DB_PATH = process.env.CRUX_DB_PATH ?? "./data/crux.db";
+const DB_PATH = process.env.PROOFINESS_DB_PATH ?? "./data/proofiness.db";
 
 let _db: Database.Database | null = null;
 

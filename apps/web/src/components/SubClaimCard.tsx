@@ -1,4 +1,4 @@
-import type { ClaimType, SubClaim } from "@crux/shared-types";
+import type { ClaimType, SubClaim } from "@proofiness/shared-types";
 import { SourceQualityBadge } from "./SourceQualityBadge.js";
 import { SteelmanPair } from "./SteelmanPair.js";
 import { ProvenanceChain } from "./ProvenanceChain.js";
@@ -13,21 +13,21 @@ const TYPE_LABELS: Record<ClaimType, string> = {
   comparative: "Comparative",
 };
 
-// Visual style differs by type so the user can see at a glance what KIND of claim
-// each piece is — empirical questions need different evidence than value questions.
-// Border-color only; no fill that suggests a verdict.
-const TYPE_BORDER: Record<ClaimType, string> = {
-  empirical_fact: "border-l-blue-500",
-  causal: "border-l-purple-500",
-  definitional: "border-l-amber-500",
-  value_judgment: "border-l-rose-500",
-  prediction: "border-l-teal-500",
-  comparative: "border-l-indigo-500",
+// Per-type left rule color. Stays in the cool-metal palette — no green/red,
+// no fill that suggests a verdict. Different rules signal "different KIND of
+// question" so the user can see what evidence to expect.
+const TYPE_RULE: Record<ClaimType, string> = {
+  empirical_fact: "border-l-stone-700",
+  causal: "border-l-stone-600",
+  definitional: "border-l-amber-700", // brass — definitional moves are the most-overlooked
+  value_judgment: "border-l-stone-500",
+  prediction: "border-l-stone-600",
+  comparative: "border-l-stone-700",
 };
 
 interface Props {
   subClaim: SubClaim;
-  // Marked when the dossier-level crux identifies this sub-claim as a hinge.
+  index: number;
   isCrux?: boolean;
 }
 
@@ -37,111 +37,129 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
-export function SubClaimCard({ subClaim, isCrux }: Props) {
-  // Crux marker: a thin ring around the card. Visually neutral — same slate tone
-  // as everywhere else, no green/red. The text label below carries the meaning.
-  const cruxRing = isCrux ? "ring-2 ring-slate-700 ring-offset-1" : "";
+export function SubClaimCard({ subClaim, index, isCrux }: Props) {
   return (
     <article
-      className={`rounded border border-slate-200 ${TYPE_BORDER[subClaim.type]} border-l-4 bg-white p-4 shadow-sm ${cruxRing}`}
+      className={`border border-stone-300 ${TYPE_RULE[subClaim.type]} border-l-4 bg-white ${isCrux ? "ring-1 ring-accent ring-offset-2 ring-offset-stone-50" : ""}`}
     >
-      {isCrux && (
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-700">
-          Crux sub-claim — the overall claim hinges on this
-        </p>
-      )}
-
-      <header className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-base font-semibold text-slate-900">{subClaim.text}</h3>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {subClaim.contestation && (
-            <ContestationBadge label={subClaim.contestation.label} />
-          )}
-          <span className="text-xs uppercase tracking-wide text-slate-500">
-            {TYPE_LABELS[subClaim.type]}
+      {/* Section masthead with section number + type tag */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-300 bg-stone-100 px-4 py-2">
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-[0.7rem] uppercase tracking-widish text-stone-600">
+            §03·{String(index).padStart(2, "0")}
           </span>
+          <span className="pf-label">{TYPE_LABELS[subClaim.type]}</span>
         </div>
-      </header>
+        {subClaim.contestation && (
+          <ContestationBadge label={subClaim.contestation.label} />
+        )}
+      </div>
 
-      {subClaim.contestation?.note && (
-        <p className="mb-2 text-xs italic text-slate-600">{subClaim.contestation.note}</p>
-      )}
+      <div className="space-y-4 p-4">
+        {isCrux && (
+          <p className="border-l-2 border-accent bg-stone-50 px-3 py-1.5 font-display text-xs font-bold uppercase tracking-widish text-accent">
+            Crux · the overall claim hinges on this
+          </p>
+        )}
 
-      {subClaim.searchQueries.length > 0 && (
-        <details className="mb-2 text-xs text-slate-500">
-          <summary className="cursor-pointer">
-            Searched: {subClaim.searchQueries.length}{" "}
-            {subClaim.searchQueries.length === 1 ? "framing" : "framings"}
-          </summary>
-          <ul className="mt-1 list-disc space-y-0.5 pl-5">
-            {subClaim.searchQueries.map((q, i) => (
-              <li key={i} className="font-mono">
-                {q}
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
+        <h3 className="font-serif text-base leading-relaxed text-ink">{subClaim.text}</h3>
 
-      {subClaim.sources.length === 0 ? (
-        <p className="text-sm italic text-slate-500">
-          {subClaim.searchQueries.length > 0
-            ? "No sources returned for this sub-claim across all framings."
-            : "Not searchable — this sub-claim is not the kind of question evidence resolves."}
-        </p>
-      ) : (
-        <ul className="space-y-3">
-          {subClaim.sources.map((src, i) => (
-            <li key={`${src.url}-${i}`} className="rounded border border-slate-100 bg-slate-50 p-3">
-              <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-                <a
-                  href={src.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm font-medium text-blue-700 underline decoration-blue-300 underline-offset-2 hover:decoration-blue-700"
-                >
-                  {src.title}
-                </a>
-                <SourceQualityBadge
-                  sourceType={src.sourceType}
-                  classifierUsed={src.classifierUsed}
-                />
-              </div>
+        {subClaim.contestation?.note && (
+          <p className="border-l-2 border-stone-300 bg-stone-50 px-3 py-2 font-serif text-xs italic leading-relaxed text-stone-700">
+            {subClaim.contestation.note}
+          </p>
+        )}
 
-              <div className="mb-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
-                {src.publishedAt && <span>{formatDate(src.publishedAt)}</span>}
-                {src.paywalled && (
-                  <span className="rounded border border-slate-300 px-1.5 py-0.5 font-medium text-slate-600">
-                    Paywalled
-                  </span>
-                )}
-                {src.fetchError && !src.paywalled && (
-                  <span
-                    className="rounded border border-slate-300 px-1.5 py-0.5 font-medium text-slate-600"
-                    title={src.fetchError}
-                  >
-                    Couldn't fetch full text
-                  </span>
-                )}
-              </div>
+        {subClaim.searchQueries.length > 0 && (
+          <details className="border border-stone-200 bg-stone-50">
+            <summary className="cursor-pointer px-3 py-1.5 font-mono text-[0.7rem] uppercase tracking-widish text-stone-600 hover:text-ink">
+              Searched · {subClaim.searchQueries.length}{" "}
+              {subClaim.searchQueries.length === 1 ? "framing" : "framings"}
+            </summary>
+            <ul className="space-y-0.5 border-t border-stone-200 px-3 py-2">
+              {subClaim.searchQueries.map((q, i) => (
+                <li key={i} className="font-mono text-xs text-stone-700">
+                  → {q}
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
 
-              {src.snippet && <p className="text-sm text-slate-700">{src.snippet}</p>}
-              <p className="mt-1 truncate text-xs text-slate-400">{src.url}</p>
-              {src.provenance && (
-                <ProvenanceChain chain={src.provenance} rootTitle={src.title} />
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+        {subClaim.sources.length === 0 ? (
+          <p className="font-serif text-sm italic text-stone-600">
+            {subClaim.searchQueries.length > 0
+              ? "No sources returned across all framings."
+              : "Not searchable — this sub-claim is not the kind of question evidence resolves."}
+          </p>
+        ) : (
+          <div>
+            <p className="pf-label mb-2">
+              Sources · {subClaim.sources.length}
+            </p>
+            <ul className="divide-y divide-stone-200 border border-stone-200">
+              {subClaim.sources.map((src, i) => (
+                <li key={`${src.url}-${i}`} className="bg-white p-3">
+                  <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <span className="mr-2 font-mono text-[0.7rem] text-stone-500">
+                        S·{String(i + 1).padStart(2, "0")}
+                      </span>
+                      <a
+                        href={src.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-sans text-sm font-medium text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
+                      >
+                        {src.title}
+                      </a>
+                    </div>
+                    <SourceQualityBadge
+                      sourceType={src.sourceType}
+                      classifierUsed={src.classifierUsed}
+                    />
+                  </div>
 
-      {subClaim.steelman && (
-        <SteelmanPair
-          steelman={subClaim.steelman}
-          sources={subClaim.sources}
-          subClaimId={subClaim.id}
-        />
-      )}
+                  <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[0.7rem] uppercase tracking-widish text-stone-500">
+                    {src.publishedAt && <span>{formatDate(src.publishedAt)}</span>}
+                    {src.paywalled && (
+                      <span className="border border-stone-400 px-1.5 py-px text-stone-700">
+                        Paywalled
+                      </span>
+                    )}
+                    {src.fetchError && !src.paywalled && (
+                      <span
+                        className="border border-stone-400 px-1.5 py-px text-stone-700"
+                        title={src.fetchError}
+                      >
+                        Fetch failed
+                      </span>
+                    )}
+                  </div>
+
+                  {src.snippet && (
+                    <p className="font-serif text-sm leading-relaxed text-stone-800">
+                      {src.snippet}
+                    </p>
+                  )}
+                  <p className="mt-1 truncate font-mono text-[0.7rem] text-stone-500">{src.url}</p>
+                  {src.provenance && (
+                    <ProvenanceChain chain={src.provenance} rootTitle={src.title} />
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {subClaim.steelman && (
+          <SteelmanPair
+            steelman={subClaim.steelman}
+            sources={subClaim.sources}
+            subClaimId={subClaim.id}
+          />
+        )}
+      </div>
     </article>
   );
 }

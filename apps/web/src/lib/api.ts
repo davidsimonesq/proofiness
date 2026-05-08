@@ -4,7 +4,7 @@ import type {
   Dossier,
   DossierList,
   ProgressEvent,
-} from "@crux/shared-types";
+} from "@proofiness/shared-types";
 
 // Structured error variants the client can render distinctly.
 //   - "claim_rejected": normalization refused the claim; suggestions present

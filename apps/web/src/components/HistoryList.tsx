@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { DossierSummary } from "@crux/shared-types";
+import type { DossierSummary } from "@proofiness/shared-types";
 import { listDossiers } from "../lib/api.js";
 import { buildDossierHash } from "../lib/route.js";
 
@@ -38,32 +38,44 @@ export function HistoryList() {
   }
 
   if (phase === "loading") {
-    return <p className="text-sm text-slate-500">Loading history…</p>;
+    return <p className="font-mono text-sm text-stone-600">Loading index…</p>;
   }
   if (phase === "error") {
-    return <p className="text-sm text-rose-700">Couldn't load history: {error}</p>;
+    return (
+      <p className="font-mono text-sm text-oxblood">
+        Couldn't load index: {error}
+      </p>
+    );
   }
   if (items.length === 0) {
     return (
-      <p className="text-sm italic text-slate-500">
-        No saved dossiers yet. Submit a claim above to start.
+      <p className="font-serif text-sm italic text-stone-600">
+        No saved dossiers yet. Submit a claim above to start the index.
       </p>
     );
   }
 
   return (
     <>
-      <ul className="space-y-2">
-        {items.map((item) => (
+      <ul className="divide-y divide-stone-300 border border-stone-300 bg-white">
+        {items.map((item, i) => (
           <li key={item.id}>
             <a
               href={buildDossierHash(item.id)}
-              className="block rounded border border-slate-200 bg-white p-3 shadow-sm hover:bg-slate-50"
+              className="flex items-baseline gap-3 px-4 py-3 hover:bg-stone-50"
             >
-              <p className="line-clamp-2 text-sm text-slate-900">{item.claim}</p>
-              <p className="mt-1 text-xs text-slate-500">
-                {new Date(item.createdAt).toLocaleString()}
-              </p>
+              <span className="shrink-0 font-mono text-[0.7rem] uppercase tracking-widish text-stone-500">
+                {String(i + 1).padStart(3, "0")}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="line-clamp-2 font-sans text-sm text-ink">{item.claim}</p>
+                <p className="mt-1 font-mono text-[0.7rem] uppercase tracking-widish text-stone-500">
+                  {new Date(item.createdAt).toLocaleString()}
+                </p>
+              </div>
+              <span className="shrink-0 font-mono text-stone-400" aria-hidden="true">
+                →
+              </span>
             </a>
           </li>
         ))}
@@ -73,7 +85,7 @@ export function HistoryList() {
           type="button"
           onClick={loadMore}
           disabled={phase === "loading_more"}
-          className="mt-3 w-full rounded border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+          className="mt-3 w-full border border-stone-400 bg-stone-100 px-3 py-2 font-display text-xs font-semibold uppercase tracking-widish text-stone-700 hover:border-ink hover:bg-stone-200 hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
         >
           {phase === "loading_more" ? "Loading…" : "Load more"}
         </button>

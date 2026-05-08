@@ -12,7 +12,7 @@
 // original source that has been retracted, misinterpreted, or was always weak."
 // This module is what makes that visible.
 
-import type { ProvenanceChain, ProvenanceLink, SourceType, TerminusReason } from "@crux/shared-types";
+import type { ProvenanceChain, ProvenanceLink, SourceType, TerminusReason } from "@proofiness/shared-types";
 import { getCachedFetch, provenanceCache } from "../lib/cache.js";
 import { fromOutboundLinks, inferFromProse, mergeCandidates, type CitationCandidate } from "./extract-citations.js";
 import { classifyOne } from "./classify.js";
