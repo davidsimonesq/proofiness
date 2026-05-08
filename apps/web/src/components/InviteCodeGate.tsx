@@ -32,8 +32,10 @@ export function InviteCodeGate({ reason, onAccepted }: Props) {
       </div>
       <div className="space-y-4 p-5">
         <p className="font-serif text-base leading-relaxed text-stone-800">
-          Proofiness is in private beta. Each dossier costs real money in API calls,
-          so access is gated by invite code.{" "}
+          Proofiness is in private beta. Each dossier costs real money in API calls, so
+          access is gated by invite code. Each code is good for a fixed number of dossiers
+          total — when you've used your allotment, you can request a new code or switch to
+          your own API keys.{" "}
           {reason && (
             <span className="font-serif italic text-stone-600">— {reason}</span>
           )}

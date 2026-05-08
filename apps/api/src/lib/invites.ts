@@ -1,21 +1,28 @@
-// Cost gate: invite-code authorization + per-code daily dossier cap.
+// Cost gate: invite-code authorization + per-code LIFETIME dossier cap.
 //
 // The single biggest concern for any deployed instance is unbounded LLM /
 // search costs from anonymous traffic. This module is the gate.
 //
 // Configuration (env):
-//   INVITE_CODES        — comma-separated list of accepted codes. Empty/unset
-//                         means the gate is OFF (every request passes).
-//                         Treat empty as a positive choice for local dev only.
-//   DAILY_DOSSIER_LIMIT — max dossiers per code per day. Default 10.
-//                         At ~$0.10–0.30 per cold dossier, 10/day is ~$3/day
-//                         worst case per code.
+//   INVITE_CODES          — comma-separated list of accepted codes. Empty/unset
+//                           means the gate is OFF (every request passes).
+//                           Treat empty as a positive choice for local dev only.
+//   INVITE_DOSSIER_LIMIT  — max dossiers per code, LIFETIME (across all days
+//                           for that code, ever). Default 10.
+//                           At ~$0.20–0.30 per cold dossier, 10 lifetime is
+//                           ~$3 worst case per code, total. Once a code hits
+//                           the cap, it's exhausted permanently — no daily
+//                           reset, no leakage. Bump the env value or hand
+//                           the user a fresh code if they need more.
 //
 // The check is applied only to /api/dossier (the expensive endpoint).
 // Read-only routes (GET /api/dossier/:id, GET /api/dossiers) are not gated;
 // reading a saved dossier costs nothing.
+//
+// History is still tracked per-day in invite_usage(code, day, count) so the
+// audit trail / future per-code usage UI gets the breakdown for free.
 
-import { incrementInviteUsage } from "./db.js";
+import { getInviteCodeLifetimeUsage, tryConsumeInviteQuota } from "./db.js";
 
 export interface InviteCheckResult {
   ok: boolean;
@@ -36,26 +43,30 @@ function getAllowedCodes(): Set<string> {
   return allowedCodesCache.value;
 }
 
-function getDailyLimit(): number {
-  const n = Number.parseInt(process.env.DAILY_DOSSIER_LIMIT ?? "10", 10);
+function getLifetimeLimit(): number {
+  const n = Number.parseInt(process.env.INVITE_DOSSIER_LIMIT ?? "10", 10);
   return Number.isFinite(n) && n > 0 ? n : 10;
 }
 
-// Today's date in YYYY-MM-DD UTC. Daily windows are UTC so a code can't get a
-// quota reset by traveling east; not a serious threat model, just consistency.
+// Today in UTC (YYYY-MM-DD). Used as the day key for per-day rows in
+// invite_usage; lifetime totals sum across all days.
 function todayUtc(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
 /**
- * Checks the invite code AND increments the day's quota if allowed. Returns:
- *   - { ok: true }                        — request allowed; quota incremented
- *   - { ok: false, status: 401, ... }     — code missing or invalid
- *   - { ok: false, status: 429, ... }     — code valid but over daily quota
+ * Checks the invite code AND increments the counter if allowed. Returns:
+ *   - { ok: true }                    — request allowed; counter incremented
+ *   - { ok: false, status: 401, ... } — code missing or invalid
+ *   - { ok: false, status: 429, ... } — code valid but lifetime quota exhausted
+ *
+ * The check + increment is one transaction so concurrent requests on the
+ * same code can't over-count (race condition would otherwise let a code
+ * sneak past the cap by exactly the number of concurrent in-flight requests).
  *
  * Special case: if INVITE_CODES env is empty/unset, the gate is OFF and every
- * request passes (no quota tracked). This is for local dev. Production
- * instances MUST set INVITE_CODES.
+ * request passes (no quota tracked). For local dev only. Production instances
+ * MUST set INVITE_CODES.
  */
 export function checkInviteAndConsume(code: string | undefined): InviteCheckResult {
   const allowed = getAllowedCodes();
@@ -73,14 +84,22 @@ export function checkInviteAndConsume(code: string | undefined): InviteCheckResu
     return { ok: false, status: 401, reason: "invalid invite code" };
   }
 
-  const limit = getDailyLimit();
-  const newCount = incrementInviteUsage(trimmed, todayUtc());
-  if (newCount > limit) {
+  const limit = getLifetimeLimit();
+  const result = tryConsumeInviteQuota(trimmed, todayUtc(), limit);
+
+  if (!result.allowed) {
     return {
       ok: false,
       status: 429,
-      reason: `daily dossier limit (${limit}) exceeded for this invite code; resets 00:00 UTC`,
+      reason: `invite code's lifetime quota (${limit} dossiers) is exhausted; switch to your own API keys or request a new code`,
     };
   }
   return { ok: true, status: 200 };
+}
+
+// Read-only — used by future "your usage" UI. Returns {used, limit, remaining}.
+export function getInviteCodeStatus(code: string): { used: number; limit: number; remaining: number } {
+  const used = getInviteCodeLifetimeUsage(code);
+  const limit = getLifetimeLimit();
+  return { used, limit, remaining: Math.max(0, limit - used) };
 }

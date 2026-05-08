@@ -209,26 +209,40 @@ export function deleteDossier(id: string): boolean {
   return result.changes > 0;
 }
 
-// ─── Invite-code daily quota ─────────────────────────────────────────────────
-// Returns the new count for (code, today) after a successful UPSERT increment.
-// Atomic: SQLite serializes writes to the same table, and the INSERT...ON
-// CONFLICT...DO UPDATE pattern is one statement.
-export function incrementInviteUsage(code: string, day: string): number {
+// ─── Invite-code lifetime quota ──────────────────────────────────────────────
+// Atomically checks the lifetime usage for `code` against `lifetimeLimit` and,
+// if allowed, increments today's row in invite_usage. Returns
+// `{ allowed: true, total: <new lifetime sum> }` on success or
+// `{ allowed: false, total: <current sum> }` when the cap is hit.
+//
+// The check + increment is one transaction so concurrent requests on the same
+// code can't sneak past the cap by a race-condition margin.
+export function tryConsumeInviteQuota(
+  code: string,
+  day: string,
+  lifetimeLimit: number,
+): { allowed: boolean; total: number } {
   const db = getDb();
-  db.prepare(
-    `INSERT INTO invite_usage (code, day, count) VALUES (?, ?, 1)
-     ON CONFLICT(code, day) DO UPDATE SET count = count + 1`,
-  ).run(code, day);
-  const row = db
-    .prepare(`SELECT count FROM invite_usage WHERE code = ? AND day = ?`)
-    .get(code, day) as { count: number } | undefined;
-  return row?.count ?? 1;
+  return db.transaction(() => {
+    const totalRow = db
+      .prepare(`SELECT COALESCE(SUM(count), 0) AS total FROM invite_usage WHERE code = ?`)
+      .get(code) as { total: number };
+    if (totalRow.total >= lifetimeLimit) {
+      return { allowed: false as const, total: totalRow.total };
+    }
+    db.prepare(
+      `INSERT INTO invite_usage (code, day, count) VALUES (?, ?, 1)
+       ON CONFLICT(code, day) DO UPDATE SET count = count + 1`,
+    ).run(code, day);
+    return { allowed: true as const, total: totalRow.total + 1 };
+  })();
 }
 
-export function getInviteUsage(code: string, day: string): number {
+// Read-only lifetime sum for a code. Used by the user-facing usage helper.
+export function getInviteCodeLifetimeUsage(code: string): number {
   const db = getDb();
   const row = db
-    .prepare(`SELECT count FROM invite_usage WHERE code = ? AND day = ?`)
-    .get(code, day) as { count: number } | undefined;
-  return row?.count ?? 0;
+    .prepare(`SELECT COALESCE(SUM(count), 0) AS total FROM invite_usage WHERE code = ?`)
+    .get(code) as { total: number };
+  return row.total;
 }

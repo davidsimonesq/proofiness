@@ -62,9 +62,21 @@ export async function dossierRoutes(app: FastifyInstance): Promise<void> {
       });
     }
 
+    // Validate the request body BEFORE consuming quota — malformed requests
+    // shouldn't burn an invite code's lifetime allotment.
+    const parsed = CreateRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return reply.code(400).send({
+        error: "invalid_request",
+        detail: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "),
+      });
+    }
+    const { claim, context } = parsed.data;
+
     if (byok.mode === "embedded") {
-      // Cost gate: invite-code check + per-code daily dossier quota. When
-      // INVITE_CODES env is empty (local dev), this is a no-op.
+      // Cost gate: invite-code check + per-code lifetime dossier quota. When
+      // INVITE_CODES env is empty (local dev), this is a no-op. Runs AFTER
+      // body validation so a malformed request doesn't cost a quota slot.
       const inviteCode = req.headers["x-invite-code"];
       const inviteCodeStr = Array.isArray(inviteCode) ? inviteCode[0] : inviteCode;
       const gate = checkInviteAndConsume(inviteCodeStr);
@@ -74,15 +86,6 @@ export async function dossierRoutes(app: FastifyInstance): Promise<void> {
           .send({ error: gate.status === 401 ? "invite_required" : "quota_exceeded", detail: gate.reason });
       }
     }
-
-    const parsed = CreateRequestSchema.safeParse(req.body);
-    if (!parsed.success) {
-      return reply.code(400).send({
-        error: "invalid_request",
-        detail: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "),
-      });
-    }
-    const { claim, context } = parsed.data;
 
     // SSE response headers — disable proxy/server buffering so events flush immediately.
     reply.raw.writeHead(200, {

@@ -269,12 +269,19 @@ function ErrorPanel({ error, lastProgress, onSuggestionClick }: ErrorPanelProps)
   if (error.kind === "quota_exceeded") {
     return (
       <div className="mt-6 border border-stone-400 bg-stone-100 p-5">
-        <p className="pf-label-loud">Daily limit reached</p>
+        <p className="pf-label-loud">Invite quota exhausted</p>
         <p className="mt-2 font-serif text-sm leading-relaxed text-stone-800">{error.reason}</p>
         <p className="mt-2 font-serif text-xs italic text-stone-600">
-          Each dossier costs real money in API calls; the daily cap is there to keep usage
-          sustainable. Try again after 00:00 UTC, or switch to your own API keys for unlimited
-          dossiers (you'll be billed directly by Anthropic and Tavily).
+          Each invite code is good for a fixed number of dossiers, total. Switch to your own
+          API keys for unlimited dossiers (you'll be billed directly by Anthropic and Tavily),
+          or email{" "}
+          <a
+            href="mailto:info@proofiness.org?subject=Proofiness%20invite%20quota"
+            className="font-mono text-stone-700 underline decoration-stone-400 underline-offset-2 hover:text-ink hover:decoration-ink"
+          >
+            info@proofiness.org
+          </a>{" "}
+          for a new code.
         </p>
         <a
           href="#/settings"

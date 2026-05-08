@@ -599,8 +599,9 @@ function HelpContent() {
 
       <Subhead>Using your own API keys</Subhead>
       <Para>
-        If you'd rather pay your own way and skip the daily quota, you can supply your own
-        Anthropic + Tavily keys in{" "}
+        Each invite code is capped at a fixed number of dossiers, total — when you've used
+        your allotment, the cost gate refuses further requests on that code. To keep going
+        without asking for a new code, supply your own Anthropic + Tavily keys in{" "}
         <a
           href="#/settings"
           className="text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
