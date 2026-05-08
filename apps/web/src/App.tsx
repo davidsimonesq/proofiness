@@ -4,8 +4,9 @@ import { ClaimInput } from "./components/ClaimInput.js";
 import { DossierView } from "./components/DossierView.js";
 import { ProgressIndicator } from "./components/ProgressIndicator.js";
 import { HistoryList } from "./components/HistoryList.js";
+import { StaticPage } from "./components/StaticPage.js";
 import { getDossier, streamDossier, type DossierError } from "./lib/api.js";
-import { buildDossierHash, navigate, useRoute } from "./lib/route.js";
+import { buildDossierHash, buildStaticHash, navigate, useRoute } from "./lib/route.js";
 
 const PROGRESS_STEP_LABELS: Record<ProgressStep, string> = {
   normalizing: "claim normalization",
@@ -17,6 +18,7 @@ const PROGRESS_STEP_LABELS: Record<ProgressStep, string> = {
   generating_steelmans: "steelman generation",
   classifying_contestation: "contestation classification",
   identifying_crux: "crux identification",
+  assessing: "top-line assessment",
   persisting: "saving",
 };
 
@@ -33,7 +35,13 @@ export default function App() {
   return (
     <main className="mx-auto max-w-3xl px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
       <Header />
-      {route.kind === "dossier" ? <DossierRoute id={route.id} /> : <HomeRoute />}
+      {route.kind === "dossier" ? (
+        <DossierRoute id={route.id} />
+      ) : route.kind === "static" ? (
+        <StaticPage slug={route.slug} />
+      ) : (
+        <HomeRoute />
+      )}
       <Footer />
     </main>
   );
@@ -54,15 +62,15 @@ function Header() {
           <h1 className="font-display text-4xl font-bold uppercase tracking-widish text-ink sm:text-5xl">
             Proofiness
           </h1>
-          <p className="mt-1 font-display text-xs uppercase tracking-widest text-stone-600">
-            Evidence Dossier — Not a Verdict
+          <p className="mt-1 font-serif text-lg italic text-stone-600">
+            The Quest for Truth — with Receipts!
           </p>
         </a>
       </div>
       <p className="mt-4 max-w-prose font-serif text-sm leading-relaxed text-stone-700">
         Paste a claim. Proofiness decomposes it, traces the citations to their headwater,
-        steelmans both sides, and identifies what the answer actually hinges on.
-        It does not pronounce. <span className="italic">You judge.</span>
+        steelmans both sides, and returns a calibrated, plain-language assessment with the
+        full case file behind it. <span className="italic">Read the answer in 30 seconds, dig in when you want to.</span>
       </p>
     </header>
   );
@@ -71,11 +79,46 @@ function Header() {
 function Footer() {
   return (
     <footer className="mt-16">
-      <div className="pf-rule mb-3" />
-      <p className="font-mono text-[0.65rem] uppercase tracking-widest text-stone-500">
-        i-Resist Civic Tech Suite · No verdict, by design
+      <div className="pf-rule mb-4" />
+      <nav
+        aria-label="Footer"
+        className="flex flex-wrap items-center gap-x-2 gap-y-1 font-display text-xs font-semibold uppercase tracking-widish text-stone-700"
+      >
+        <FooterLink slug="about">About</FooterLink>
+        <span className="text-stone-400" aria-hidden="true">·</span>
+        <FooterLink slug="privacy">Privacy</FooterLink>
+        <span className="text-stone-400" aria-hidden="true">·</span>
+        <FooterLink slug="terms">Terms</FooterLink>
+        <span className="text-stone-400" aria-hidden="true">·</span>
+        <FooterLink slug="help">Help</FooterLink>
+        <span className="text-stone-400" aria-hidden="true">·</span>
+        <a
+          href="https://github.com/davidsimonesq/proofiness"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-ink"
+        >
+          GitHub ↗
+        </a>
+      </nav>
+      <p className="mt-3 font-mono text-[0.65rem] uppercase tracking-widest text-stone-500">
+        i-Resist Civic Tech Suite · Assessments calibrated, sources visible
       </p>
     </footer>
+  );
+}
+
+function FooterLink({
+  slug,
+  children,
+}: {
+  slug: "about" | "privacy" | "terms" | "help";
+  children: React.ReactNode;
+}) {
+  return (
+    <a href={buildStaticHash(slug)} className="hover:text-ink">
+      {children}
+    </a>
   );
 }
 

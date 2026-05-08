@@ -16,6 +16,7 @@ import { generateSteelman, shouldSteelman } from "./steelman.js";
 import { isTraceable, traceProvenance } from "./trace-provenance.js";
 import { classifyContestation } from "./contestation.js";
 import { identifyCrux } from "./identify-crux.js";
+import { assess } from "./assess.js";
 import { classifyByDomain } from "../lib/source-rules.js";
 import { classifyCache, getCachedFetch } from "../lib/cache.js";
 import type { SearchHit } from "../lib/search-provider.js";
@@ -206,6 +207,12 @@ export async function assembleDossier(
   emit({ step: "identifying_crux", message: "Identifying what the claim hinges on…" });
   const crux = await identifyCrux({ claim, subClaims });
 
+  // Step 9: top-line assessment. The fast-path answer — calibrated label +
+  // confidence + 1-2 sentence synthesis. Sees everything: contestations,
+  // steelmans, crux. Replaces the previous "no verdict" stance.
+  emit({ step: "assessing", message: "Synthesizing the top-line assessment…" });
+  const assessment = await assess({ claim: normalized, subClaims, crux });
+
   return {
     id: randomUUID(),
     // Persist the normalized claim — that's what the dossier was actually built
@@ -219,6 +226,7 @@ export async function assembleDossier(
     embeddedAssumptions: decomposition.embeddedAssumptions,
     unresolvedQuestions: decomposition.unresolvedQuestions,
     crux: crux ?? undefined,
+    assessment: assessment ?? undefined,
   };
 }
 

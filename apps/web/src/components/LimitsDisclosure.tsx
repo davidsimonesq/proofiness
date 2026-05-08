@@ -1,6 +1,12 @@
 // Spec §9 — surface the limits, don't bury them. Persistent on every dossier.
 // Renders as marginalia: hairline-bordered, italic prose, lower visual weight
 // than the main dossier surfaces but always present.
+//
+// NOTE: this copy was rewritten when the project moved from "no verdict, by
+// design" to "calibrated assessment with full receipts." The disclaimers are
+// now about what the AI can wrongly assess, not about what it deliberately
+// doesn't say. The spec §9 spirit ("be honest about what the tool can't do")
+// is unchanged.
 export function LimitsDisclosure() {
   return (
     <details className="border border-stone-300 bg-stone-50">
@@ -12,24 +18,30 @@ export function LimitsDisclosure() {
           Proofiness works best on <span className="font-semibold">specific, decomposable factual
           claims</span> — vote counts, study findings, dates, named events, named people. It
           works progressively worse as you move toward broad narrative claims ("immigration is
-          hurting the economy") or values questions ("was this policy good").
+          hurting the economy") or values questions ("was this policy good"). On those, the
+          assessment will often come back as <span className="font-mono">definitional</span> or{" "}
+          <span className="font-mono">value-laden</span> — that's the tool telling you the question
+          isn't the kind it can resolve.
         </p>
         <p>
-          Proofiness is only as good as what's on the indexed web. For genuinely cutting-edge or
-          actively contested topics, the dossier will reflect biases in search rankings and
-          source availability.
+          The assessment is only as good as what's on the indexed web. For genuinely cutting-edge or
+          actively contested topics, the assessment may shift if better sources are available
+          tomorrow. For topics where the literature is one-sided in public-facing sources but
+          contested in specialist literature, Proofiness may underweight the contested side.
         </p>
         <p>
-          Proofiness uses an AI model that can generate confident-sounding wrong synthesis. The dossier
-          links every claim to a source for a reason: <span className="font-semibold">don't
-          trust the synthesis, check the sources</span>.
+          Proofiness uses an AI model that can generate <span className="font-semibold">confident-sounding wrong
+          assessments</span>. The assessment is a starting point, not the end. Every claim links to
+          its sources for a reason: when the assessment doesn't feel grounded, expand the case file
+          and check the sources directly.
         </p>
         <p className="border-l-2 border-accent bg-white px-3 py-2 not-italic">
           <span className="font-display font-bold uppercase tracking-widish text-accent">
-            By design:
+            What this isn't:
           </span>{" "}
-          Proofiness does not give you a verdict. Pronouncements are how the information environment
-          got polluted in the first place.
+          a fact-checker badge. The assessment is a calibrated call from the available sources, not
+          a final pronouncement. The confidence dial and the deep-path case file are there so you
+          can see when to trust it and when to push back.
         </p>
       </div>
     </details>

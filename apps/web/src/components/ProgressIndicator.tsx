@@ -10,6 +10,7 @@ const STEP_ORDER: ProgressStep[] = [
   "generating_steelmans",
   "classifying_contestation",
   "identifying_crux",
+  "assessing",
   "persisting",
 ];
 
@@ -23,6 +24,7 @@ const STEP_LABELS: Record<ProgressStep, string> = {
   generating_steelmans: "Steelman pairs",
   classifying_contestation: "Contestation labels",
   identifying_crux: "Identify crux",
+  assessing: "Top-line assessment",
   persisting: "Persist dossier",
 };
 

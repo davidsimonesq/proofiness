@@ -137,10 +137,39 @@ export interface SubClaim {
   contestation?: ContestationLabel;
 }
 
-// Phase 5: dossier-level "what does this hinge on" summary.
-// Spec §3.7: "the answer to X depends on how we resolve Y" — that reframe is
-// the productive move in any contested factual debate. The summary is
-// STRUCTURAL (what depends on what), never EVALUATIVE (which side is right).
+// Top-line assessment of the overall claim. The single biggest difference from
+// the spec's original "no verdict" stance: Proofiness now MAKES a call. The
+// call is calibrated (low/moderate/high confidence), category-shaped (one of
+// six labels — not true/false), and points at the dossier underneath as the
+// receipts. The full dossier is still available in the deep path; the
+// assessment is the fast-path answer.
+export type AssessmentLabel =
+  | "largely_supported"        // evidence consistently in this direction
+  | "largely_contradicted"     // evidence consistently against
+  | "mixed"                    // both sides have substantive support; hinges on the crux
+  | "definitional"             // empirical core settled; conclusion turns on a contested word
+  | "value_laden"              // claim is fundamentally normative; evidence cannot resolve it
+  | "insufficient_evidence";   // sources too thin to make a call
+
+export type AssessmentConfidence = "low" | "moderate" | "high";
+
+export interface Assessment {
+  label: AssessmentLabel;
+  // Filled when label is "mixed" (the crux question) or "definitional" (the
+  // contested word). Empty for the others. Renders inline with the label
+  // (e.g., "Mixed — hinges on whether voter ID requirements cause turnout drops").
+  labelDetail: string;
+  confidence: AssessmentConfidence;
+  // 1-2 sentences in plain language. References sub-claims and the crux when
+  // relevant. The "show your work" surface — what this label is grounded in.
+  synthesis: string;
+}
+
+// Dossier-level "what does this hinge on" summary, per spec §3.7.
+// "the answer to X depends on how we resolve Y" — the productive move in any
+// contested factual debate. Structural (what depends on what), never evaluative
+// (which side is right). The Assessment above is the evaluative surface;
+// CruxSummary stays structural and complements it.
 //
 // NAMING: this interface (and the related CruxSummary component, identifyCrux
 // function, dossier.crux field, and prompts/crux.md) keeps the name `Crux` even
@@ -170,8 +199,10 @@ export interface Dossier {
   subClaims: SubClaim[];
   embeddedAssumptions: string[];
   unresolvedQuestions: string[];
-  // Phase 5: what the strength of this claim hinges on.
+  // What the strength of this claim hinges on (structural).
   crux?: Crux;
+  // Top-line calibrated assessment (evaluative). The fast-path answer.
+  assessment?: Assessment;
 }
 
 // Wire format for POST /api/dossier
@@ -202,6 +233,7 @@ export type ProgressStep =
   | "generating_steelmans"
   | "classifying_contestation"
   | "identifying_crux"
+  | "assessing"
   | "persisting";
 
 export interface ProgressEvent {

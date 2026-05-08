@@ -22,7 +22,7 @@ export function ClaimInput({ onSubmit, busy }: Props) {
   return (
     <form onSubmit={handleSubmit} className="border border-stone-300 bg-white">
       <div className="border-b border-stone-300 bg-stone-100 px-4 py-2">
-        <span className="pf-label-loud">Field 01 — Claim</span>
+        <span className="pf-label-loud">Factual Allegation To Test</span>
       </div>
       <div className="p-4">
         <label className="block">

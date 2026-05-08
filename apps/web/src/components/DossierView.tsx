@@ -1,7 +1,9 @@
+import { useState } from "react";
 import type { Dossier } from "@proofiness/shared-types";
 import { SubClaimCard } from "./SubClaimCard.js";
 import { LimitsDisclosure } from "./LimitsDisclosure.js";
 import { CruxSummary } from "./CruxSummary.js";
+import { TopLineAssessment } from "./TopLineAssessment.js";
 import { ShareButton } from "./ShareButton.js";
 import { SectionHeader } from "../App.js";
 
@@ -18,6 +20,10 @@ function shortId(id: string): string {
 export function DossierView({ dossier }: Props) {
   const cruxSet = new Set(dossier.crux?.hingesOn ?? []);
   const generatedDate = new Date(dossier.createdAt);
+  // Fast-path / deep-path split. Default: top-line answer + limits visible.
+  // The user clicks once to expand the case file (decomposition + assumptions
+  // + unresolved questions). Stays in-page; no separate route.
+  const [showFull, setShowFull] = useState(false);
 
   return (
     <article className="space-y-10">
@@ -56,60 +62,88 @@ export function DossierView({ dossier }: Props) {
         </div>
       </header>
 
+      {/* FAST PATH — visible by default. The 30-second answer. */}
+      {dossier.assessment && <TopLineAssessment assessment={dossier.assessment} />}
+
       {dossier.crux && <CruxSummary crux={dossier.crux} subClaims={dossier.subClaims} />}
 
       <LimitsDisclosure />
 
-      <section>
-        <SectionHeader number="03" label={`Decomposition · ${dossier.subClaims.length} sub-claim${dossier.subClaims.length === 1 ? "" : "s"}`} />
-        <div className="space-y-5">
-          {dossier.subClaims.map((sc, i) => (
-            <SubClaimCard
-              key={sc.id}
-              subClaim={sc}
-              isCrux={cruxSet.has(sc.id)}
-              index={i + 1}
+      {/* DEEP PATH — opt-in. The 5-minute case file. */}
+      {!showFull ? (
+        <button
+          type="button"
+          onClick={() => setShowFull(true)}
+          className="w-full border border-ink bg-white px-4 py-3 font-display text-sm font-semibold uppercase tracking-widish text-ink hover:bg-stone-100"
+        >
+          ↓ View full dossier · {dossier.subClaims.length} sub-claim
+          {dossier.subClaims.length === 1 ? "" : "s"}, sources, steelman pairs, provenance
+        </button>
+      ) : (
+        <>
+          <section>
+            <SectionHeader
+              number="03"
+              label={`Decomposition · ${dossier.subClaims.length} sub-claim${dossier.subClaims.length === 1 ? "" : "s"}`}
             />
-          ))}
-        </div>
-      </section>
+            <div className="space-y-5">
+              {dossier.subClaims.map((sc, i) => (
+                <SubClaimCard
+                  key={sc.id}
+                  subClaim={sc}
+                  isCrux={cruxSet.has(sc.id)}
+                  index={i + 1}
+                />
+              ))}
+            </div>
+          </section>
 
-      {dossier.embeddedAssumptions.length > 0 && (
-        <section>
-          <SectionHeader number="04" label="Embedded assumptions" />
-          <ul className="border border-stone-300 bg-white">
-            {dossier.embeddedAssumptions.map((a, i) => (
-              <li
-                key={i}
-                className="flex gap-3 border-b border-stone-200 px-4 py-3 last:border-b-0"
-              >
-                <span className="font-mono text-[0.7rem] uppercase tracking-widish text-stone-500">
-                  A·{String(i + 1).padStart(2, "0")}
-                </span>
-                <p className="font-serif text-sm leading-relaxed text-stone-800">{a}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+          {dossier.embeddedAssumptions.length > 0 && (
+            <section>
+              <SectionHeader number="04" label="Embedded assumptions" />
+              <ul className="border border-stone-300 bg-white">
+                {dossier.embeddedAssumptions.map((a, i) => (
+                  <li
+                    key={i}
+                    className="flex gap-3 border-b border-stone-200 px-4 py-3 last:border-b-0"
+                  >
+                    <span className="font-mono text-[0.7rem] uppercase tracking-widish text-stone-500">
+                      A·{String(i + 1).padStart(2, "0")}
+                    </span>
+                    <p className="font-serif text-sm leading-relaxed text-stone-800">{a}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
-      {dossier.unresolvedQuestions.length > 0 && (
-        <section>
-          <SectionHeader number="05" label="Unresolved questions" />
-          <ul className="border border-stone-300 bg-white">
-            {dossier.unresolvedQuestions.map((q, i) => (
-              <li
-                key={i}
-                className="flex gap-3 border-b border-stone-200 px-4 py-3 last:border-b-0"
-              >
-                <span className="font-mono text-[0.7rem] uppercase tracking-widish text-stone-500">
-                  Q·{String(i + 1).padStart(2, "0")}
-                </span>
-                <p className="font-serif text-sm leading-relaxed text-stone-800">{q}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
+          {dossier.unresolvedQuestions.length > 0 && (
+            <section>
+              <SectionHeader number="05" label="Unresolved questions" />
+              <ul className="border border-stone-300 bg-white">
+                {dossier.unresolvedQuestions.map((q, i) => (
+                  <li
+                    key={i}
+                    className="flex gap-3 border-b border-stone-200 px-4 py-3 last:border-b-0"
+                  >
+                    <span className="font-mono text-[0.7rem] uppercase tracking-widish text-stone-500">
+                      Q·{String(i + 1).padStart(2, "0")}
+                    </span>
+                    <p className="font-serif text-sm leading-relaxed text-stone-800">{q}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowFull(false)}
+            className="w-full border border-stone-400 bg-white px-4 py-2 font-display text-xs font-semibold uppercase tracking-widish text-stone-700 hover:border-ink hover:text-ink"
+          >
+            ↑ Collapse case file
+          </button>
+        </>
       )}
     </article>
   );
