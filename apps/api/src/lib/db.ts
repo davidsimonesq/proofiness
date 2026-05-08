@@ -80,6 +80,24 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 3,
+    up: (db) => {
+      // Per-invite-code daily usage counter for the cost gate. Composite primary
+      // key on (code, day) so each (code, YYYY-MM-DD) gets one row that
+      // INCREMENT-on-conflict bumps. Cleanup is intentionally not automated —
+      // rows are tiny and let you audit usage history.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS invite_usage (
+          code  TEXT NOT NULL,
+          day   TEXT NOT NULL,
+          count INTEGER NOT NULL DEFAULT 0,
+          PRIMARY KEY (code, day)
+        );
+        CREATE INDEX IF NOT EXISTS idx_invite_usage_day ON invite_usage(day);
+      `);
+    },
+  },
 ];
 
 function runMigrations(db: Database.Database): void {
@@ -189,4 +207,28 @@ export function deleteDossier(id: string): boolean {
   const db = getDb();
   const result = db.prepare(`DELETE FROM dossiers WHERE id = ?`).run(id);
   return result.changes > 0;
+}
+
+// ─── Invite-code daily quota ─────────────────────────────────────────────────
+// Returns the new count for (code, today) after a successful UPSERT increment.
+// Atomic: SQLite serializes writes to the same table, and the INSERT...ON
+// CONFLICT...DO UPDATE pattern is one statement.
+export function incrementInviteUsage(code: string, day: string): number {
+  const db = getDb();
+  db.prepare(
+    `INSERT INTO invite_usage (code, day, count) VALUES (?, ?, 1)
+     ON CONFLICT(code, day) DO UPDATE SET count = count + 1`,
+  ).run(code, day);
+  const row = db
+    .prepare(`SELECT count FROM invite_usage WHERE code = ? AND day = ?`)
+    .get(code, day) as { count: number } | undefined;
+  return row?.count ?? 1;
+}
+
+export function getInviteUsage(code: string, day: string): number {
+  const db = getDb();
+  const row = db
+    .prepare(`SELECT count FROM invite_usage WHERE code = ? AND day = ?`)
+    .get(code, day) as { count: number } | undefined;
+  return row?.count ?? 0;
 }

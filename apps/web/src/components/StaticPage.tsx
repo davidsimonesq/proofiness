@@ -279,7 +279,44 @@ function PrivacyContent() {
         ]}
       />
 
-      <Subhead>5. Cookies and tracking</Subhead>
+      <Subhead>5. User-supplied API keys (BYOK)</Subhead>
+      <Para>
+        Proofiness offers an optional "bring your own keys" mode (Settings →{" "}
+        <a
+          href="#/settings"
+          className="text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
+        >
+          Use my own keys
+        </a>
+        ). When you supply your own Anthropic and Tavily keys:
+      </Para>
+      <Bullets
+        items={[
+          <>
+            The keys are stored only in your browser's localStorage. They are{" "}
+            <strong>never</strong> sent to a Proofiness database or written to disk.
+          </>,
+          <>
+            They are sent with each dossier request as HTTP headers
+            (<Code>x-anthropic-key</Code> and <Code>x-tavily-key</Code>) over TLS.
+          </>,
+          <>
+            The server uses them in memory for the duration of that single request to call
+            Anthropic and Tavily on your behalf, then discards them. They are{" "}
+            <strong>not logged</strong> in any access log, error log, or request trace.
+          </>,
+          <>
+            Anthropic and Tavily then bill <strong>your accounts directly</strong> for the
+            calls; the embedded server keys are not used for those requests.
+          </>,
+          <>
+            Clearing your keys (Settings → Clear my keys) removes them from localStorage
+            immediately; subsequent requests revert to the embedded-key path.
+          </>,
+        ]}
+      />
+
+      <Subhead>6. Cookies and tracking</Subhead>
       <Para>
         Proofiness sets no cookies. No analytics scripts (Google Analytics, Plausible, etc.) are
         loaded. The only third-party network request initiated by the web app itself is to
@@ -287,7 +324,7 @@ function PrivacyContent() {
         Google is loaded and no Google cookies are set as a result.
       </Para>
 
-      <Subhead>6. Sharing</Subhead>
+      <Subhead>7. Sharing</Subhead>
       <Para>
         The "Share" button on a dossier copies a URL to your clipboard. The URL points at the
         dossier's permalink on the Proofiness instance you are using. No tracking parameters are
@@ -295,7 +332,7 @@ function PrivacyContent() {
         reach the URL depends on whether your instance is publicly accessible.
       </Para>
 
-      <Subhead>7. Your rights and controls</Subhead>
+      <Subhead>8. Your rights and controls</Subhead>
       <Para>
         Because Proofiness as shipped is a single-user local tool, you have direct control over
         all the data: the SQLite database file is on your machine, and you can inspect, export,
@@ -305,12 +342,12 @@ function PrivacyContent() {
         used internally; a UI delete control is not yet exposed but is on the roadmap.
       </Para>
 
-      <Subhead>8. Children</Subhead>
+      <Subhead>9. Children</Subhead>
       <Para>
         Proofiness is not directed at children under 13 and is not designed for use by them.
       </Para>
 
-      <Subhead>9. Security</Subhead>
+      <Subhead>10. Security</Subhead>
       <Para>
         For local single-user use, the security boundary is the host machine. The API binds to
         127.0.0.1 by default and is not exposed to the network. The SQLite database is a regular
@@ -318,14 +355,14 @@ function PrivacyContent() {
         in <Code>apps/api/.env</Code>, which is gitignored and not transmitted off the host.
       </Para>
 
-      <Subhead>10. Changes to this policy</Subhead>
+      <Subhead>11. Changes to this policy</Subhead>
       <Para>
         Material changes to this policy will be reflected in the "Last updated" date at the top
         of this page and announced in the GitHub repository's release notes. For deployed
         instances under separate stewardship, the operator should publish their own change log.
       </Para>
 
-      <Subhead>11. Contact</Subhead>
+      <Subhead>12. Contact</Subhead>
       <Para>
         Privacy questions, data-access requests, and deletion requests:{" "}
         <ContactEmail />. Technical questions and bug reports are also welcome as issues on
@@ -558,6 +595,30 @@ function HelpContent() {
       <Para>
         When you find a real disagreement with the assessment, the source links are the
         receipts you need to argue with it.
+      </Para>
+
+      <Subhead>Using your own API keys</Subhead>
+      <Para>
+        If you'd rather pay your own way and skip the daily quota, you can supply your own
+        Anthropic + Tavily keys in{" "}
+        <a
+          href="#/settings"
+          className="text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
+        >
+          Settings
+        </a>
+        . Both keys are required together. Once set, the cost gate is bypassed entirely and
+        you have unlimited dossiers. Anthropic and Tavily bill your accounts directly; a
+        typical cold dossier costs roughly $0.20–0.30 in Anthropic credit plus ~20 Tavily
+        searches (free tier covers 1,000/month). Keys live only in your browser's localStorage,
+        sent per-request, never stored on the server. See{" "}
+        <a
+          href="#/privacy"
+          className="text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
+        >
+          Privacy
+        </a>{" "}
+        §5 for the details.
       </Para>
 
       <Subhead>Common questions</Subhead>

@@ -1,15 +1,28 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { getRequestAnthropicKey } from "./request-context.js";
 
-let _client: Anthropic | null = null;
+// Default client (cached) for the embedded ANTHROPIC_API_KEY path. BYOK
+// requests get a fresh per-request client built from the user's key — no
+// caching there, since clients are per-key.
+let _defaultClient: Anthropic | null = null;
 
-export function getAnthropic(): Anthropic {
-  if (_client) return _client;
+function getDefaultClient(): Anthropic {
+  if (_defaultClient) return _defaultClient;
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error("ANTHROPIC_API_KEY is not set. Copy .env.example to .env and fill it in.");
   }
-  _client = new Anthropic({ apiKey });
-  return _client;
+  _defaultClient = new Anthropic({ apiKey });
+  return _defaultClient;
+}
+
+// Returns the right Anthropic client for the current request — user-supplied
+// when BYOK headers are present (read from AsyncLocalStorage), otherwise the
+// shared embedded-key client.
+export function getAnthropic(): Anthropic {
+  const userKey = getRequestAnthropicKey();
+  if (userKey) return new Anthropic({ apiKey: userKey });
+  return getDefaultClient();
 }
 
 export type AnthropicErrorCategory =

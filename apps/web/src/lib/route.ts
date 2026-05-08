@@ -19,6 +19,7 @@ export type Route =
   | { kind: "app" }
   | { kind: "dossier"; id: string }
   | { kind: "static"; slug: StaticPageSlug }
+  | { kind: "settings" }
   | { kind: "unknown" };
 
 const STATIC_SLUGS: ReadonlySet<string> = new Set(["about", "privacy", "terms", "help"]);
@@ -27,6 +28,7 @@ export function parseHash(hash: string): Route {
   const cleaned = hash.replace(/^#/, "").replace(/^\/+/, "");
   if (cleaned === "" || cleaned === "/") return { kind: "landing" };
   if (cleaned === "app") return { kind: "app" };
+  if (cleaned === "settings") return { kind: "settings" };
   const dossierMatch = cleaned.match(/^dossier\/([a-z0-9-]+)$/i);
   if (dossierMatch) return { kind: "dossier", id: dossierMatch[1]! };
   if (STATIC_SLUGS.has(cleaned)) return { kind: "static", slug: cleaned as StaticPageSlug };
@@ -35,6 +37,7 @@ export function parseHash(hash: string): Route {
 
 export const APP_HASH = "#/app";
 export const LANDING_HASH = "#/";
+export const SETTINGS_HASH = "#/settings";
 
 export function buildDossierHash(id: string): string {
   return `#/dossier/${id}`;

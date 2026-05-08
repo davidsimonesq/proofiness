@@ -5,8 +5,17 @@ import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import { dossierRoutes } from "./routes/dossier.js";
 
+// In production (e.g. Railway, Docker, any container platform), bind to all
+// interfaces so the platform's load balancer can reach us. In local dev,
+// default to 127.0.0.1 so we don't accidentally expose the API on the LAN.
 const PORT = Number.parseInt(process.env.PORT ?? "8787", 10);
-const WEB_ORIGIN = process.env.WEB_ORIGIN ?? "http://localhost:5173";
+const HOST = process.env.HOST ?? (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
+
+// WEB_ORIGIN accepts a single origin or a comma-separated list. The list form
+// matters for production: same dossier instance might be reachable via
+// proofiness.org AND www.proofiness.org, both of which need CORS clearance.
+const WEB_ORIGIN_RAW = process.env.WEB_ORIGIN ?? "http://localhost:5173";
+const WEB_ORIGINS = WEB_ORIGIN_RAW.split(",").map((s) => s.trim()).filter(Boolean);
 
 async function main(): Promise<void> {
   const app = Fastify({
@@ -23,6 +32,10 @@ async function main(): Promise<void> {
         res: (res) => ({ statusCode: res.statusCode }),
       },
     },
+    // Trust the platform's load balancer for client IPs (Railway, Cloudflare,
+    // etc. set X-Forwarded-For). Without this the rate-limit / quota
+    // attribution sees the LB IP as every client.
+    trustProxy: true,
     bodyLimit: 1024 * 1024,
   });
 
@@ -31,7 +44,13 @@ async function main(): Promise<void> {
     done();
   });
 
-  await app.register(cors, { origin: WEB_ORIGIN });
+  // CORS: pass an array if multiple origins, a string if just one. Also allow
+  // the x-invite-code request header so the browser preflight succeeds.
+  await app.register(cors, {
+    origin: WEB_ORIGINS.length === 1 ? WEB_ORIGINS[0] : WEB_ORIGINS,
+    allowedHeaders: ["content-type", "accept", "x-invite-code"],
+    exposedHeaders: ["x-request-id"],
+  });
 
   // Global default rate limit — per-route overrides for the expensive endpoint
   // live in routes/dossier.ts. Per-IP keying is fine for single-instance dev;
@@ -46,8 +65,8 @@ async function main(): Promise<void> {
   await app.register(dossierRoutes);
 
   try {
-    await app.listen({ port: PORT, host: "127.0.0.1" });
-    app.log.info(`crux api listening on http://127.0.0.1:${PORT}`);
+    await app.listen({ port: PORT, host: HOST });
+    app.log.info(`proofiness api listening on http://${HOST}:${PORT}`);
   } catch (err) {
     app.log.error(err);
     process.exit(1);

@@ -1,6 +1,8 @@
 // Thin abstraction over the web-search API so swapping Tavily ↔ Brave ↔ Serper
 // is a one-file change. Phase 1 ships with Tavily.
 
+import { getRequestTavilyKey } from "./request-context.js";
+
 export interface SearchHit {
   title: string;
   url: string;
@@ -53,14 +55,26 @@ class TavilyProvider implements SearchProvider {
   }
 }
 
-let _provider: SearchProvider | null = null;
+// Default provider (cached) for the embedded TAVILY_API_KEY path. BYOK
+// requests get a fresh per-request provider built from the user's key — no
+// caching there, since providers are per-key.
+let _defaultProvider: SearchProvider | null = null;
 
-export function getSearchProvider(): SearchProvider {
-  if (_provider) return _provider;
+function getDefaultProvider(): SearchProvider {
+  if (_defaultProvider) return _defaultProvider;
   const apiKey = process.env.TAVILY_API_KEY;
   if (!apiKey) {
     throw new Error("TAVILY_API_KEY is not set. Copy .env.example to .env and fill it in.");
   }
-  _provider = new TavilyProvider(apiKey);
-  return _provider;
+  _defaultProvider = new TavilyProvider(apiKey);
+  return _defaultProvider;
+}
+
+// Returns the right search provider for the current request — user-supplied
+// when BYOK headers are present (read from AsyncLocalStorage), otherwise the
+// shared embedded-key provider.
+export function getSearchProvider(): SearchProvider {
+  const userKey = getRequestTavilyKey();
+  if (userKey) return new TavilyProvider(userKey);
+  return getDefaultProvider();
 }

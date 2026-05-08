@@ -6,7 +6,11 @@ import { ProgressIndicator } from "./components/ProgressIndicator.js";
 import { HistoryList } from "./components/HistoryList.js";
 import { StaticPage } from "./components/StaticPage.js";
 import { LandingPage } from "./components/LandingPage.js";
+import { SettingsPage } from "./components/SettingsPage.js";
+import { InviteCodeGate } from "./components/InviteCodeGate.js";
 import { getDossier, streamDossier, type DossierError } from "./lib/api.js";
+import { getInviteCode } from "./lib/invites.js";
+import { hasFullByokKeys } from "./lib/keys.js";
 import {
   APP_HASH,
   buildDossierHash,
@@ -59,6 +63,8 @@ function renderRoute(route: Route) {
       return <DossierRoute id={route.id} />;
     case "static":
       return <StaticPage slug={route.slug} />;
+    case "settings":
+      return <SettingsPage />;
     case "unknown":
     default:
       return <LandingPage />;
@@ -68,24 +74,23 @@ function renderRoute(route: Route) {
 function Header({ route }: { route: Route }) {
   // "Open the App" CTA visible on landing and static pages — places where the
   // user might be reading and want to get to the tool without scrolling. Hidden
-  // on app and dossier views (they're already in the tool).
-  const showAppLink = route.kind === "landing" || route.kind === "static";
+  // on app and dossier views (they're already in the tool). When there's
+  // nothing to show in the top bar, the bar itself is omitted so the wordmark
+  // + tagline carry the document-genre signal alone.
+  const showAppLink =
+    route.kind === "landing" || route.kind === "static" || route.kind === "settings";
   return (
     <header className="mb-8 sm:mb-12">
-      {/* Top hairline + serial number — establishes the document genre */}
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <span className="font-mono text-[0.65rem] uppercase tracking-widest text-stone-500">
-          i-Resist · Civic Tech · PRF-001
-        </span>
-        {showAppLink && (
+      {showAppLink && (
+        <div className="mb-4 flex items-center justify-end">
           <a
             href={APP_HASH}
             className="font-display text-xs font-semibold uppercase tracking-widish text-ink hover:text-accent"
           >
             Open the App →
           </a>
-        )}
-      </div>
+        </div>
+      )}
       <div className="pf-rule" />
       <div className="flex items-end justify-between gap-4 pt-3">
         <a href="#/" className="block">
@@ -97,7 +102,7 @@ function Header({ route }: { route: Route }) {
           </p>
         </a>
       </div>
-      <p className="mt-4 max-w-prose font-serif text-sm leading-relaxed text-stone-700">
+      <p className="mt-4 max-w-prose font-serif text-[1.05rem] leading-relaxed text-stone-700">
         Paste a claim. Proofiness decomposes it, traces the citations to their headwater,
         steelmans both sides, and returns a calibrated, plain-language assessment with the
         full case file behind it. <span className="italic">Read the answer in 30 seconds, dig in when you want to.</span>
@@ -122,6 +127,10 @@ function Footer() {
         <span className="text-stone-400" aria-hidden="true">·</span>
         <FooterLink slug="help">Help</FooterLink>
         <span className="text-stone-400" aria-hidden="true">·</span>
+        <a href="#/settings" className="hover:text-ink">
+          Settings
+        </a>
+        <span className="text-stone-400" aria-hidden="true">·</span>
         <a
           href="https://github.com/davidsimonesq/proofiness"
           target="_blank"
@@ -131,9 +140,6 @@ function Footer() {
           GitHub ↗
         </a>
       </nav>
-      <p className="mt-3 font-mono text-[0.65rem] uppercase tracking-widest text-stone-500">
-        i-Resist Civic Tech Suite · Assessments calibrated, sources visible
-      </p>
     </footer>
   );
 }
@@ -153,9 +159,10 @@ function FooterLink({
 }
 
 // AppRoute — the actual tool: input form + progress + history list.
-// Was HomeRoute before the landing page was added; functionally unchanged.
 function AppRoute() {
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
+  // Bumped on successful invite-code entry to force a re-render of the gate.
+  const [inviteVersion, setInviteVersion] = useState(0);
   const lastProgressRef = useRef<ProgressEvent | null>(null);
 
   async function handleSubmit(claim: string, context: string | undefined) {
@@ -181,13 +188,37 @@ function AppRoute() {
     handleSubmit(suggestion, undefined);
   }
 
+  // BYOK takes precedence over the invite gate. When the user has both
+  // personal keys saved, the server bypasses the cost gate entirely and the
+  // invite gate is irrelevant; we show a status badge linking to Settings so
+  // they can confirm what's active.
+  const usingByok = hasFullByokKeys();
+  const hasCode = getInviteCode() !== null;
+  const inviteError = phase.kind === "error" && phase.error.kind === "invite_required" ? phase.error.reason : null;
+  const showGate = !usingByok && (!hasCode || inviteError !== null);
+
+  if (showGate) {
+    return (
+      <InviteCodeGate
+        key={inviteVersion}
+        reason={inviteError ?? undefined}
+        onAccepted={() => {
+          setInviteVersion((v) => v + 1);
+          setPhase({ kind: "idle" });
+        }}
+      />
+    );
+  }
+
   return (
     <>
+      {usingByok && <ByokBadge />}
+
       {(phase.kind === "idle" || phase.kind === "error") && (
         <ClaimInput onSubmit={handleSubmit} busy={false} />
       )}
 
-      {phase.kind === "error" && (
+      {phase.kind === "error" && phase.error.kind !== "invite_required" && (
         <ErrorPanel
           error={phase.error}
           lastProgress={phase.lastProgress}
@@ -210,6 +241,24 @@ function AppRoute() {
   );
 }
 
+// Small status pill shown above the input form when the user has set personal
+// API keys. Confirms BYOK is active and links to Settings for management.
+function ByokBadge() {
+  return (
+    <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border border-accent-dim bg-stone-50 px-3 py-2">
+      <span className="font-display text-xs font-bold uppercase tracking-widish text-accent">
+        BYOK active — using your keys
+      </span>
+      <a
+        href="#/settings"
+        className="font-mono text-[0.7rem] uppercase tracking-widish text-stone-700 hover:text-ink"
+      >
+        Manage →
+      </a>
+    </div>
+  );
+}
+
 interface ErrorPanelProps {
   error: DossierError;
   lastProgress: ProgressEvent | null;
@@ -217,6 +266,29 @@ interface ErrorPanelProps {
 }
 
 function ErrorPanel({ error, lastProgress, onSuggestionClick }: ErrorPanelProps) {
+  if (error.kind === "quota_exceeded") {
+    return (
+      <div className="mt-6 border border-stone-400 bg-stone-100 p-5">
+        <p className="pf-label-loud">Daily limit reached</p>
+        <p className="mt-2 font-serif text-sm leading-relaxed text-stone-800">{error.reason}</p>
+        <p className="mt-2 font-serif text-xs italic text-stone-600">
+          Each dossier costs real money in API calls; the daily cap is there to keep usage
+          sustainable. Try again after 00:00 UTC, or switch to your own API keys for unlimited
+          dossiers (you'll be billed directly by Anthropic and Tavily).
+        </p>
+        <a
+          href="#/settings"
+          className="mt-3 inline-block border border-ink bg-ink px-4 py-1.5 font-display text-xs font-semibold uppercase tracking-widish text-stone-50 hover:bg-stone-800"
+        >
+          Use my own keys →
+        </a>
+      </div>
+    );
+  }
+  if (error.kind === "invite_required") {
+    // Surfaced by the gate above the form; this branch shouldn't render.
+    return null;
+  }
   if (error.kind === "claim_rejected") {
     return (
       <div className="mt-6 border border-stone-400 bg-stone-100 p-5">

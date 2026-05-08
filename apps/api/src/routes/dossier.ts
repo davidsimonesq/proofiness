@@ -4,6 +4,21 @@ import type { ProgressEvent } from "@proofiness/shared-types";
 import { assembleDossier } from "../pipeline/assemble-dossier.js";
 import { ClaimRejectedError } from "../pipeline/normalize.js";
 import { saveDossier, getDossier, listDossiers, type ListCursor } from "../lib/db.js";
+import { checkInviteAndConsume } from "../lib/invites.js";
+import { requestContext } from "../lib/request-context.js";
+
+// Pulls BYOK headers from the request. Returns both keys when both are
+// present (BYOK mode); returns null when neither is present (embedded mode);
+// throws "partial" when exactly one is provided so the route returns 400.
+function readByokHeaders(headers: Record<string, string | string[] | undefined>): { mode: "byok"; anthropicKey: string; tavilyKey: string } | { mode: "embedded" } | { mode: "partial"; missing: string } {
+  const aRaw = headers["x-anthropic-key"];
+  const tRaw = headers["x-tavily-key"];
+  const a = (Array.isArray(aRaw) ? aRaw[0] : aRaw)?.trim();
+  const t = (Array.isArray(tRaw) ? tRaw[0] : tRaw)?.trim();
+  if (a && t) return { mode: "byok", anthropicKey: a, tavilyKey: t };
+  if (!a && !t) return { mode: "embedded" };
+  return { mode: "partial", missing: a ? "x-tavily-key" : "x-anthropic-key" };
+}
 
 const CreateRequestSchema = z.object({
   claim: z.string().trim().min(3, "Claim is too short").max(4000, "Claim is too long"),
@@ -33,6 +48,33 @@ export async function dossierRoutes(app: FastifyInstance): Promise<void> {
       rateLimit: { max: 5, timeWindow: "1 minute" },
     },
   }, async (req, reply) => {
+    // BYOK mode: user supplies their own Anthropic + Tavily keys via headers.
+    // When both are present, the cost gate is bypassed (user is paying their
+    // own provider directly). When neither is present, the embedded keys are
+    // used and the cost gate applies. Exactly one is treated as a config
+    // mistake — return 400 rather than silently using the embedded key for
+    // the missing side.
+    const byok = readByokHeaders(req.headers);
+    if (byok.mode === "partial") {
+      return reply.code(400).send({
+        error: "byok_incomplete",
+        detail: `Both x-anthropic-key and x-tavily-key are required to use your own keys. Missing: ${byok.missing}.`,
+      });
+    }
+
+    if (byok.mode === "embedded") {
+      // Cost gate: invite-code check + per-code daily dossier quota. When
+      // INVITE_CODES env is empty (local dev), this is a no-op.
+      const inviteCode = req.headers["x-invite-code"];
+      const inviteCodeStr = Array.isArray(inviteCode) ? inviteCode[0] : inviteCode;
+      const gate = checkInviteAndConsume(inviteCodeStr);
+      if (!gate.ok) {
+        return reply
+          .code(gate.status)
+          .send({ error: gate.status === 401 ? "invite_required" : "quota_exceeded", detail: gate.reason });
+      }
+    }
+
     const parsed = CreateRequestSchema.safeParse(req.body);
     if (!parsed.success) {
       return reply.code(400).send({
@@ -64,8 +106,17 @@ export async function dossierRoutes(app: FastifyInstance): Promise<void> {
       writeSse(reply, EVT_PROGRESS, event);
     };
 
+    // Scope the BYOK keys (if any) to this request via AsyncLocalStorage. When
+    // mode === "embedded", the store is empty and getAnthropic()/getSearchProvider()
+    // fall back to the env keys.
+    const ctxKeys = byok.mode === "byok"
+      ? { anthropicKey: byok.anthropicKey, tavilyKey: byok.tavilyKey }
+      : {};
+
     try {
-      const dossier = await assembleDossier(claim, context, emit);
+      const dossier = await requestContext.run(ctxKeys, () =>
+        assembleDossier(claim, context, emit),
+      );
       emit({ step: "persisting", message: "Saving dossier…" });
       saveDossier(dossier);
       writeSse(reply, EVT_DONE, { dossier });

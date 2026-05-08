@@ -5,9 +5,41 @@ import type {
   DossierList,
   ProgressEvent,
 } from "@proofiness/shared-types";
+import { getInviteCode } from "./invites.js";
+import { getUserKeys, hasFullByokKeys } from "./keys.js";
+
+// VITE_API_BASE_URL: when the web app and API are on different origins
+// (e.g. web on SiteGround, API on Railway), set this to the absolute API
+// base (e.g. "https://api.proofiness.org"). When unset (or empty), all
+// requests go to the same origin via relative URLs — which is what the
+// dev server uses (vite proxy) and what same-origin deploys use.
+const API_BASE = ((import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "").replace(/\/$/, "");
+
+function apiUrl(path: string): string {
+  return API_BASE ? `${API_BASE}${path}` : path;
+}
+
+// Browser-side header builder. Sends BYOK keys when both are stored; falls
+// back to the invite code otherwise. The two are mutually exclusive — if the
+// user has set personal keys, the server bypasses the cost gate entirely
+// (they're paying directly), so the invite header isn't needed.
+function authHeaders(): Record<string, string> {
+  if (hasFullByokKeys()) {
+    const { anthropic, tavily } = getUserKeys();
+    // hasFullByokKeys guarantees both are non-null but TS narrowing doesn't follow that.
+    return {
+      "x-anthropic-key": anthropic ?? "",
+      "x-tavily-key": tavily ?? "",
+    };
+  }
+  const code = getInviteCode();
+  return code ? { "x-invite-code": code } : {};
+}
 
 // Structured error variants the client can render distinctly.
 //   - "claim_rejected": normalization refused the claim; suggestions present
+//   - "invite_required": API rejected the request for missing/invalid invite
+//   - "quota_exceeded": API rejected for exceeding the daily dossier cap
 //   - "generic": pipeline failure or any other error
 // requestId is server-generated (Fastify reqId) and lets the user grep server
 // logs for a specific failure when reporting an issue.
@@ -19,6 +51,8 @@ export type DossierError =
       suggestions: string[];
       requestId?: string;
     }
+  | { kind: "invite_required"; reason: string }
+  | { kind: "quota_exceeded"; reason: string }
   | { kind: "generic"; message: string; requestId?: string };
 
 interface StreamHandlers {
@@ -36,9 +70,13 @@ export async function streamDossier(
 ): Promise<void> {
   let res: Response;
   try {
-    res = await fetch("/api/dossier", {
+    res = await fetch(apiUrl("/api/dossier"), {
       method: "POST",
-      headers: { "content-type": "application/json", accept: "text/event-stream" },
+      headers: {
+        "content-type": "application/json",
+        accept: "text/event-stream",
+        ...authHeaders(),
+      },
       body: JSON.stringify(req),
       signal,
     });
@@ -49,14 +87,33 @@ export async function streamDossier(
   }
 
   if (!res.ok) {
-    let detail = "";
+    let body: { error?: string; detail?: string } = {};
     try {
-      const body = (await res.json()) as { error?: string; detail?: string };
-      detail = body.detail ?? body.error ?? "";
+      body = (await res.json()) as { error?: string; detail?: string };
     } catch {
-      detail = await res.text().catch(() => "");
+      // body wasn't JSON; fall through with empty body
     }
-    handlers.onError({ kind: "generic", message: `Request failed (${res.status}): ${detail || "unknown error"}` });
+    // Cost-gate failures come back as plain JSON 401/429 (NOT inside an SSE
+    // event), because the gate runs before the stream is opened.
+    if (res.status === 401 && body.error === "invite_required") {
+      handlers.onError({
+        kind: "invite_required",
+        reason: body.detail ?? "An invite code is required to use Proofiness.",
+      });
+      return;
+    }
+    if (res.status === 429 && body.error === "quota_exceeded") {
+      handlers.onError({
+        kind: "quota_exceeded",
+        reason: body.detail ?? "Daily dossier limit reached for your invite code.",
+      });
+      return;
+    }
+    const detail = body.detail ?? body.error ?? "";
+    handlers.onError({
+      kind: "generic",
+      message: `Request failed (${res.status})${detail ? `: ${detail}` : ""}`,
+    });
     return;
   }
 
@@ -151,9 +208,10 @@ function dispatchSseEvent(rawEvent: string, handlers: StreamHandlers): void {
   }
 }
 
-// One-shot retrieval — used by the share URL and history view.
+// One-shot retrieval — used by the share URL and history view. Read-only
+// endpoints aren't gated by the invite code; reading saved dossiers is free.
 export async function getDossier(id: string): Promise<Dossier> {
-  const res = await fetch(`/api/dossier/${encodeURIComponent(id)}`);
+  const res = await fetch(apiUrl(`/api/dossier/${encodeURIComponent(id)}`));
   if (!res.ok) {
     if (res.status === 404) throw new Error("Dossier not found");
     throw new Error(`Failed to load dossier (${res.status})`);
@@ -167,7 +225,7 @@ export async function listDossiers(opts: { cursor?: string; limit?: number } = {
   if (opts.cursor) params.set("cursor", opts.cursor);
   if (opts.limit) params.set("limit", String(opts.limit));
   const qs = params.toString();
-  const url = qs ? `/api/dossiers?${qs}` : "/api/dossiers";
+  const url = qs ? apiUrl(`/api/dossiers?${qs}`) : apiUrl("/api/dossiers");
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to load history (${res.status})`);
   return (await res.json()) as DossierList;
