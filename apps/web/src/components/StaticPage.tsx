@@ -240,9 +240,12 @@ function PrivacyContent() {
       <Subhead>3. Where data is stored</Subhead>
       <Para>
         Dossiers are stored in a local SQLite database file on the machine running the Proofiness
-        API server. By default this is <Code>apps/api/data/proofiness.db</Code>. The database is
-        not transmitted off the host machine and is not synced to any cloud service by Proofiness
-        itself. If the host machine is backed up, the dossiers will be backed up with it.
+        API server. By default this is <Code>apps/api/data/proofiness.db</Code>. On the hosted
+        instance at proofiness.org, the database lives on a Railway volume at{" "}
+        <Code>/data/proofiness.db</Code> and is included in that platform's standard volume
+        snapshots. The database is not transmitted off the host machine and is not synced to any
+        cloud service by Proofiness itself. If the host machine is backed up, the dossiers will
+        be backed up with it.
       </Para>
       <Para>
         Cached fetches of source articles and source-classification decisions are kept in memory
@@ -355,14 +358,49 @@ function PrivacyContent() {
         in <Code>apps/api/.env</Code>, which is gitignored and not transmitted off the host.
       </Para>
 
-      <Subhead>11. Changes to this policy</Subhead>
+      <Subhead>11. Hosted instance at proofiness.org</Subhead>
+      <Para>
+        The hosted instance at proofiness.org runs the open-source code described above with the
+        following additional behaviors that the local-use defaults do not cover:
+      </Para>
+      <Bullets
+        items={[
+          <>
+            <strong>IP addresses are seen transiently</strong> by the per-IP rate limiter (5
+            dossier requests per minute) and by the platform's standard request logs. The
+            application itself does not write IP addresses to the dossier database. Platform
+            logs are retained per Railway's defaults (typically 7–30 days) and are not used
+            for analytics.
+          </>,
+          <>
+            <strong>Invite-code usage is recorded</strong> in the local SQLite database — one
+            row per (code, day, count) — to enforce the lifetime quota. Codes are short opaque
+            strings and are not linked to identities unless you tell us who you are when
+            requesting one.
+          </>,
+          <>
+            <strong>Dossiers persist server-side</strong> in the database at{" "}
+            <Code>/data/proofiness.db</Code> on a Railway volume. Anyone who knows a dossier's
+            UUID URL can read it; treat dossier URLs as semi-public. To request deletion of a
+            specific dossier or of all dossiers associated with your invite code, email{" "}
+            <ContactEmail />.
+          </>,
+          <>
+            <strong>BYOK requests skip the invite-code quota entirely</strong> (no usage row
+            is written), but the resulting dossier is still saved to the server-side database
+            the same way as any other dossier.
+          </>,
+        ]}
+      />
+
+      <Subhead>12. Changes to this policy</Subhead>
       <Para>
         Material changes to this policy will be reflected in the "Last updated" date at the top
         of this page and announced in the GitHub repository's release notes. For deployed
         instances under separate stewardship, the operator should publish their own change log.
       </Para>
 
-      <Subhead>12. Contact</Subhead>
+      <Subhead>13. Contact</Subhead>
       <Para>
         Privacy questions, data-access requests, and deletion requests:{" "}
         <ContactEmail />. Technical questions and bug reports are also welcome as issues on
@@ -399,6 +437,14 @@ function TermsContent() {
         evidence dossiers and calibrated assessments from web-search results. The Service is
         provided <strong>as-is, for informational and research purposes only</strong>. It is not
         a fact-checking service, a journalism outlet, or a licensed advisory of any kind.
+      </Para>
+      <Para>
+        Access to the hosted instance at proofiness.org is rate-limited (per IP) and
+        quota-gated (per invite code, lifetime). Specific quotas, rate limits, and gating
+        mechanisms may change without notice. If a request is refused for quota or rate-limit
+        reasons, the API returns a structured error response with the reason. Users may bypass
+        the cost gate by supplying their own Anthropic and Tavily API keys; see the Privacy
+        Policy for the details of how user-supplied keys are handled.
       </Para>
 
       <Subhead>3. AI accuracy disclaimer</Subhead>
@@ -611,8 +657,10 @@ function HelpContent() {
         . Both keys are required together. Once set, the cost gate is bypassed entirely and
         you have unlimited dossiers. Anthropic and Tavily bill your accounts directly; a
         typical cold dossier costs roughly $0.20–0.30 in Anthropic credit plus ~20 Tavily
-        searches (free tier covers 1,000/month). Keys live only in your browser's localStorage,
-        sent per-request, never stored on the server. See{" "}
+        searches (Tavily's free tier covers 1,000 searches/month, enough for ~50 cold
+        dossiers). If you don't already have keys, sign up at console.anthropic.com and
+        tavily.com. Keys live only in your browser's localStorage, sent per-request, never
+        stored on the server. See{" "}
         <a
           href="#/privacy"
           className="text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
