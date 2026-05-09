@@ -210,6 +210,10 @@ export interface Dossier {
   crux?: Crux;
   // Top-line calibrated assessment (evaluative). The fast-path answer.
   assessment?: Assessment;
+  // Server-computed: true when the requesting client's invite-code header
+  // matches the code that created this dossier. The UI uses it to decide
+  // whether to show the delete control. Computed per-request, not stored.
+  canDelete?: boolean;
 }
 
 // Wire format for POST /api/dossier
@@ -255,6 +259,8 @@ export interface DossierSummary {
   number: number;
   claim: string;
   createdAt: string;
+  // Same semantics as Dossier.canDelete — computed per-request.
+  canDelete?: boolean;
 }
 
 // Cursor-paginated response. nextCursor is null when there are no more rows.

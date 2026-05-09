@@ -3,7 +3,14 @@ import { z } from "zod";
 import type { ProgressEvent } from "@proofiness/shared-types";
 import { assembleDossier } from "../pipeline/assemble-dossier.js";
 import { ClaimRejectedError } from "../pipeline/normalize.js";
-import { saveDossier, getDossier, listDossiers, type ListCursor } from "../lib/db.js";
+import {
+  saveDossier,
+  getDossier,
+  getDossierCreatorCode,
+  deleteDossier,
+  listDossiers,
+  type ListCursor,
+} from "../lib/db.js";
 import { checkInviteAndConsume } from "../lib/invites.js";
 import { requestContext } from "../lib/request-context.js";
 
@@ -33,6 +40,16 @@ const EVT_ERROR = "error";
 function writeSse(reply: FastifyReply, event: string, data: unknown): void {
   reply.raw.write(`event: ${event}\n`);
   reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+// Extract a trimmed x-invite-code header value, or null if missing/empty.
+// Used both as the cost-gate key and as the delete-authorization key.
+function readInviteCodeHeader(
+  headers: Record<string, string | string[] | undefined>,
+): string | null {
+  const raw = headers["x-invite-code"];
+  const v = (Array.isArray(raw) ? raw[0] : raw)?.trim();
+  return v ? v : null;
 }
 
 export async function dossierRoutes(app: FastifyInstance): Promise<void> {
@@ -73,13 +90,15 @@ export async function dossierRoutes(app: FastifyInstance): Promise<void> {
     }
     const { claim, context } = parsed.data;
 
+    // Capture the invite code once for both gate-check and creator-attribution.
+    // Null in BYOK mode (no header sent) and in gate-disabled local dev.
+    const inviteCode = readInviteCodeHeader(req.headers);
+
     if (byok.mode === "embedded") {
       // Cost gate: invite-code check + per-code lifetime dossier quota. When
       // INVITE_CODES env is empty (local dev), this is a no-op. Runs AFTER
       // body validation so a malformed request doesn't cost a quota slot.
-      const inviteCode = req.headers["x-invite-code"];
-      const inviteCodeStr = Array.isArray(inviteCode) ? inviteCode[0] : inviteCode;
-      const gate = checkInviteAndConsume(inviteCodeStr);
+      const gate = checkInviteAndConsume(inviteCode ?? undefined);
       if (!gate.ok) {
         return reply
           .code(gate.status)
@@ -121,7 +140,12 @@ export async function dossierRoutes(app: FastifyInstance): Promise<void> {
         assembleDossier(claim, context, emit),
       );
       emit({ step: "persisting", message: "Saving dossier…" });
-      saveDossier(dossier);
+      // Record the creator code (null in BYOK mode) so the delete endpoint
+      // can authorize subsequent delete requests from the same client.
+      saveDossier(dossier, { createdByCode: byok.mode === "embedded" ? inviteCode : null });
+      // The creator just made it, so it's deletable by them. Echoing
+      // canDelete in the SSE done event spares the UI a re-fetch.
+      dossier.canDelete = byok.mode === "embedded" && inviteCode !== null;
       writeSse(reply, EVT_DONE, { dossier });
     } catch (err) {
       // Normalization rejected the claim — emit a structured error the client
@@ -149,12 +173,19 @@ export async function dossierRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Fetch a saved dossier by id (used for shareable URLs and history view).
+  // canDelete is computed server-side by comparing the requester's invite-code
+  // header to the dossier's stored creator code — the raw creator code is
+  // never sent to clients (a permalink visitor shouldn't learn whose code
+  // created what).
   app.get<{ Params: { id: string } }>("/api/dossier/:id", async (req, reply) => {
-    const dossier = getDossier(req.params.id);
-    if (!dossier) {
+    const result = getDossier(req.params.id);
+    if (!result) {
       return reply.code(404).send({ error: "not_found", detail: "no dossier with that id" });
     }
-    return { dossier };
+    const requesterCode = readInviteCodeHeader(req.headers);
+    result.dossier.canDelete =
+      result.createdByCode !== null && result.createdByCode === requesterCode;
+    return { dossier: result.dossier };
   });
 
   // List recent dossiers (history view). Cursor-paginated. Cursor is opaque
@@ -174,12 +205,58 @@ export async function dossierRoutes(app: FastifyInstance): Promise<void> {
         cursor = decoded;
       }
       const page = listDossiers({ limit, cursor });
+      const requesterCode = readInviteCodeHeader(req.headers);
+      // Strip the internal createdByCode and inject the computed canDelete
+      // before the response leaves the server.
+      const dossiers = page.rows.map(({ createdByCode, ...summary }) => ({
+        ...summary,
+        canDelete: createdByCode !== null && createdByCode === requesterCode,
+      }));
       return {
-        dossiers: page.rows,
+        dossiers,
         nextCursor: page.nextCursor ? encodeCursor(page.nextCursor) : null,
       };
     },
   );
+
+  // Delete a saved dossier. Authorized by matching x-invite-code to the
+  // dossier's stored creator code. BYOK-created and pre-v6 dossiers have
+  // no creator code on file and can't be deleted via the web (operator-
+  // deletable via the admin DB only).
+  app.delete<{ Params: { id: string } }>("/api/dossier/:id", async (req, reply) => {
+    const id = req.params.id;
+    const creatorCode = getDossierCreatorCode(id);
+    if (creatorCode === undefined) {
+      return reply.code(404).send({ error: "not_found", detail: "no dossier with that id" });
+    }
+    if (creatorCode === null) {
+      return reply.code(403).send({
+        error: "not_deletable",
+        detail:
+          "This dossier wasn't created via an invite code, so the web client can't authorize the delete. Contact the operator to remove it.",
+      });
+    }
+    const requesterCode = readInviteCodeHeader(req.headers);
+    if (!requesterCode) {
+      return reply.code(401).send({
+        error: "invite_required",
+        detail: "Set the x-invite-code header to the code that created this dossier.",
+      });
+    }
+    if (requesterCode !== creatorCode) {
+      return reply.code(403).send({
+        error: "wrong_code",
+        detail: "Only the invite code that created this dossier can delete it.",
+      });
+    }
+    const ok = deleteDossier(id);
+    if (!ok) {
+      // Race: row vanished between the auth check and the delete. Treat as
+      // success — caller's intent (it shouldn't exist) is satisfied either way.
+      return reply.code(204).send();
+    }
+    return reply.code(204).send();
+  });
 }
 
 function encodeCursor(c: ListCursor): string {

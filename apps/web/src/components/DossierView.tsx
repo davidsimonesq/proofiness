@@ -5,6 +5,7 @@ import { LimitsDisclosure } from "./LimitsDisclosure.js";
 import { CruxSummary } from "./CruxSummary.js";
 import { TopLineAssessment } from "./TopLineAssessment.js";
 import { ShareButton } from "./ShareButton.js";
+import { DeleteDossierButton } from "./DeleteDossierButton.js";
 import { SectionHeader } from "../App.js";
 
 interface Props {
@@ -33,7 +34,10 @@ export function DossierView({ dossier }: Props) {
       <header className="border border-stone-400 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-300 bg-stone-100 px-4 py-2">
           <span className="pf-label-loud">Dossier · {fmtNumber(dossier.number)}</span>
-          <ShareButton dossierId={dossier.id} />
+          <div className="flex items-center gap-3">
+            {dossier.canDelete && <DeleteDossierButton dossierId={dossier.id} />}
+            <ShareButton dossierId={dossier.id} />
+          </div>
         </div>
         <div className="space-y-4 p-5">
           <div>

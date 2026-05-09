@@ -149,6 +149,18 @@ const MIGRATIONS: Migration[] = [
       db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_dossiers_number ON dossiers(dossier_number);`);
     },
   },
+  {
+    version: 6,
+    up: (db) => {
+      // Track which invite code created each dossier so the delete endpoint
+      // can authorize "you created this, you can delete it." Nullable: rows
+      // created before v6, BYOK rows, and dossiers created with the gate
+      // disabled all stay NULL — those have no auth signal and can't be
+      // deleted via the web (operator-deletable via admin only).
+      db.exec(`ALTER TABLE dossiers ADD COLUMN created_by_code TEXT;`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_dossiers_created_by_code ON dossiers(created_by_code);`);
+    },
+  },
 ];
 
 function runMigrations(db: Database.Database): void {
@@ -184,11 +196,20 @@ function runMigrations(db: Database.Database): void {
 // number is written to both the dedicated column and the serialized body
 // so it round-trips through future reads.
 //
+// `opts.createdByCode` records which invite code created this dossier so the
+// delete endpoint can authorize "you created this, you can delete it." Pass
+// null/undefined for BYOK or gate-disabled requests; those dossiers won't
+// be deletable via the web.
+//
 // Mutates the input — callers (the streaming route) read d.number after to
 // emit it in the SSE `done` event so the client renders the right header
 // without waiting for a re-fetch.
-export function saveDossier(d: Dossier): void {
+export function saveDossier(
+  d: Dossier,
+  opts: { createdByCode?: string | null } = {},
+): void {
   const db = getDb();
+  const createdByCode = opts.createdByCode ?? null;
   db.transaction(() => {
     const row = db
       .prepare(`SELECT COALESCE(MAX(dossier_number), 0) AS m FROM dossiers`)
@@ -196,8 +217,8 @@ export function saveDossier(d: Dossier): void {
     d.number = row.m + 1;
     db.prepare(
       `INSERT OR REPLACE INTO dossiers
-         (id, claim, created_at, body, subclaim_count, has_crux, dossier_number)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+         (id, claim, created_at, body, subclaim_count, has_crux, dossier_number, created_by_code)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       d.id,
       d.claim,
@@ -206,25 +227,47 @@ export function saveDossier(d: Dossier): void {
       d.subClaims.length,
       d.crux ? 1 : 0,
       d.number,
+      createdByCode,
     );
   })();
 }
 
-export function getDossier(id: string): Dossier | null {
+// Returns the parsed dossier plus the creator's invite code (or null for
+// pre-v6, BYOK, and gate-disabled rows). The route layer compares the code
+// to the requester's x-invite-code header to compute canDelete for the
+// wire response — keeping the raw creator code server-side so it isn't
+// exposed to permalink visitors.
+export function getDossier(
+  id: string,
+): { dossier: Dossier; createdByCode: string | null } | null {
   const db = getDb();
   const row = db
-    .prepare(`SELECT body, dossier_number FROM dossiers WHERE id = ?`)
-    .get(id) as { body: string; dossier_number: number | null } | undefined;
+    .prepare(
+      `SELECT body, dossier_number, created_by_code FROM dossiers WHERE id = ?`,
+    )
+    .get(id) as
+    | { body: string; dossier_number: number | null; created_by_code: string | null }
+    | undefined;
   if (!row) return null;
   try {
     const parsed = JSON.parse(row.body) as Dossier;
     // Patch number from the column. Bodies written before migration v5 don't
     // have it in the JSON; the column was backfilled at migration time.
     if (row.dossier_number !== null) parsed.number = row.dossier_number;
-    return parsed;
+    return { dossier: parsed, createdByCode: row.created_by_code };
   } catch {
     return null;
   }
+}
+
+// Lightweight creator-code lookup used by the DELETE route — avoids parsing
+// the (potentially large) body blob just to authorize the request.
+export function getDossierCreatorCode(id: string): string | null | undefined {
+  const db = getDb();
+  const row = db
+    .prepare(`SELECT created_by_code FROM dossiers WHERE id = ?`)
+    .get(id) as { created_by_code: string | null } | undefined;
+  return row ? row.created_by_code : undefined;
 }
 
 export interface ListCursor {
@@ -232,8 +275,14 @@ export interface ListCursor {
   id: string;
 }
 
+// Internal shape — includes createdByCode so the route can compute canDelete
+// before mapping to the wire-format DossierSummary. Never sent to clients.
+export interface InternalDossierSummary extends DossierSummary {
+  createdByCode: string | null;
+}
+
 export interface ListPage {
-  rows: DossierSummary[];
+  rows: InternalDossierSummary[];
   nextCursor: ListCursor | null;
 }
 
@@ -247,24 +296,28 @@ export function listDossiers(opts: { limit?: number; cursor?: ListCursor | null 
   // Fetch one extra row to detect whether more data exists without a separate count.
   const fetchLimit = limit + 1;
 
-  let rows: DossierSummary[];
+  let rows: InternalDossierSummary[];
   if (opts.cursor) {
     rows = db
       .prepare(
-        `SELECT id, dossier_number AS number, claim, created_at AS createdAt FROM dossiers
+        `SELECT id, dossier_number AS number, claim, created_at AS createdAt,
+                created_by_code AS createdByCode
+         FROM dossiers
          WHERE created_at < ? OR (created_at = ? AND id < ?)
          ORDER BY created_at DESC, id DESC
          LIMIT ?`,
       )
-      .all(opts.cursor.createdAt, opts.cursor.createdAt, opts.cursor.id, fetchLimit) as DossierSummary[];
+      .all(opts.cursor.createdAt, opts.cursor.createdAt, opts.cursor.id, fetchLimit) as InternalDossierSummary[];
   } else {
     rows = db
       .prepare(
-        `SELECT id, dossier_number AS number, claim, created_at AS createdAt FROM dossiers
+        `SELECT id, dossier_number AS number, claim, created_at AS createdAt,
+                created_by_code AS createdByCode
+         FROM dossiers
          ORDER BY created_at DESC, id DESC
          LIMIT ?`,
       )
-      .all(fetchLimit) as DossierSummary[];
+      .all(fetchLimit) as InternalDossierSummary[];
   }
 
   const hasMore = rows.length > limit;

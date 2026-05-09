@@ -209,15 +209,37 @@ function dispatchSseEvent(rawEvent: string, handlers: StreamHandlers): void {
 }
 
 // One-shot retrieval — used by the share URL and history view. Read-only
-// endpoints aren't gated by the invite code; reading saved dossiers is free.
+// endpoints aren't gated by the invite code, but we DO send it so the
+// server can compute canDelete for the current viewer.
 export async function getDossier(id: string): Promise<Dossier> {
-  const res = await fetch(apiUrl(`/api/dossier/${encodeURIComponent(id)}`));
+  const res = await fetch(apiUrl(`/api/dossier/${encodeURIComponent(id)}`), {
+    headers: authHeaders(),
+  });
   if (!res.ok) {
     if (res.status === 404) throw new Error("Dossier not found");
     throw new Error(`Failed to load dossier (${res.status})`);
   }
   const body = (await res.json()) as CreateDossierResponse;
   return body.dossier;
+}
+
+// Delete a saved dossier. Only succeeds when the requester's invite-code
+// header matches the dossier's stored creator code. Returns void on success;
+// throws with a human-readable message on failure.
+export async function deleteDossier(id: string): Promise<void> {
+  const res = await fetch(apiUrl(`/api/dossier/${encodeURIComponent(id)}`), {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (res.status === 204) return;
+  let detail = `Delete failed (${res.status})`;
+  try {
+    const body = (await res.json()) as { detail?: string };
+    if (body.detail) detail = body.detail;
+  } catch {
+    /* ignore */
+  }
+  throw new Error(detail);
 }
 
 // Self-service invite mint. Submits a claim; server runs the normalizer on
@@ -292,7 +314,8 @@ export async function listDossiers(opts: { cursor?: string; limit?: number } = {
   if (opts.limit) params.set("limit", String(opts.limit));
   const qs = params.toString();
   const url = qs ? apiUrl(`/api/dossiers?${qs}`) : apiUrl("/api/dossiers");
-  const res = await fetch(url);
+  // Send the invite code so the server can compute canDelete per row.
+  const res = await fetch(url, { headers: authHeaders() });
   if (!res.ok) throw new Error(`Failed to load history (${res.status})`);
   return (await res.json()) as DossierList;
 }
