@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 
 // Minimal hash-based router. Avoids react-router dependency. Routes:
-//   #/             → landing page (marketing / value-prop)
-//   #/app          → the app itself (input + history)
-//   #/dossier/:id  → view a saved dossier (permalink, shareable)
-//   #/about        → about the project
-//   #/privacy      → privacy practices
-//   #/terms        → terms of use
-//   #/help         → help / how to read a dossier
+//   #/                → landing page (marketing / value-prop)
+//   #/app             → the app itself (input + history)
+//   #/dossier/:id     → view a saved dossier (permalink, shareable)
+//   #/request-invite  → self-service invite mint form
+//   #/about           → about the project
+//   #/privacy         → privacy practices
+//   #/terms           → terms of use
+//   #/help            → help / how to read a dossier
 //
 // Hash routing keeps everything client-side (no server config needed) and
 // works behind any static host.
@@ -20,6 +21,7 @@ export type Route =
   | { kind: "dossier"; id: string }
   | { kind: "static"; slug: StaticPageSlug }
   | { kind: "settings" }
+  | { kind: "request-invite" }
   | { kind: "unknown" };
 
 const STATIC_SLUGS: ReadonlySet<string> = new Set(["about", "privacy", "terms", "help"]);
@@ -29,6 +31,7 @@ export function parseHash(hash: string): Route {
   if (cleaned === "" || cleaned === "/") return { kind: "landing" };
   if (cleaned === "app") return { kind: "app" };
   if (cleaned === "settings") return { kind: "settings" };
+  if (cleaned === "request-invite") return { kind: "request-invite" };
   const dossierMatch = cleaned.match(/^dossier\/([a-z0-9-]+)$/i);
   if (dossierMatch) return { kind: "dossier", id: dossierMatch[1]! };
   if (STATIC_SLUGS.has(cleaned)) return { kind: "static", slug: cleaned as StaticPageSlug };
@@ -38,6 +41,7 @@ export function parseHash(hash: string): Route {
 export const APP_HASH = "#/app";
 export const LANDING_HASH = "#/";
 export const SETTINGS_HASH = "#/settings";
+export const REQUEST_INVITE_HASH = "#/request-invite";
 
 export function buildDossierHash(id: string): string {
   return `#/dossier/${id}`;

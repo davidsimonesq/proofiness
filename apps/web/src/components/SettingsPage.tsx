@@ -6,6 +6,7 @@ import {
   maskKey,
   setUserKeys,
 } from "../lib/keys.js";
+import { clearInviteCode, getInviteCode } from "../lib/invites.js";
 import { SectionHeader } from "../App.js";
 
 // Settings page — currently just BYOK key management. The keys live in
@@ -20,9 +21,27 @@ export function SettingsPage() {
   const [savedAt, setSavedAt] = useState<string | null>(null);
   // Re-render when keys change so the "current state" panel reflects them.
   const [version, setVersion] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   const hasBoth = hasFullByokKeys();
   const current = getUserKeys();
+  const inviteCode = getInviteCode();
+
+  async function handleCopyInvite() {
+    if (!inviteCode) return;
+    try {
+      await navigator.clipboard.writeText(inviteCode);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore — copy not supported */
+    }
+  }
+
+  function handleClearInvite() {
+    clearInviteCode();
+    setVersion((v) => v + 1);
+  }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -53,12 +72,62 @@ export function SettingsPage() {
         ← Index
       </a>
 
-      <SectionHeader number="S" label="Settings — Use Your Own API Keys" />
+      <SectionHeader number="S" label="Settings" />
+
+      {/* Invite code — shown first so users on a different browser can copy
+          and reuse their existing code without having to mint a new one. */}
+      <div className="border border-stone-400 bg-stone-50">
+        <div className="border-b border-stone-300 bg-stone-100 px-4 py-2">
+          <span className="pf-label-loud">Your invite code</span>
+        </div>
+        <div className="space-y-3 p-5">
+          {inviteCode ? (
+            <>
+              <p className="font-serif text-sm leading-relaxed text-stone-700">
+                Saved in this browser. Copy it if you want to use Proofiness from another
+                device — there's no other way for us to give it to you again.
+              </p>
+              <dl className="grid gap-x-6 gap-y-1 font-mono text-sm text-stone-700 sm:grid-cols-[max-content_1fr]">
+                <dt className="text-stone-500">Code</dt>
+                <dd className="select-all font-bold text-ink">{inviteCode}</dd>
+              </dl>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={handleCopyInvite}
+                  className="border border-stone-400 bg-white px-3 py-1.5 font-display text-xs font-semibold uppercase tracking-widish text-stone-700 hover:border-ink hover:text-ink"
+                >
+                  {copied ? "Copied" : "Copy"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleClearInvite}
+                  className="border border-stone-400 bg-white px-3 py-1.5 font-display text-xs font-semibold uppercase tracking-widish text-stone-700 hover:border-oxblood hover:text-oxblood"
+                >
+                  Forget on this device
+                </button>
+              </div>
+            </>
+          ) : (
+            <p className="font-serif text-sm leading-relaxed text-stone-700">
+              No invite code saved in this browser.{" "}
+              <a
+                href="#/request-invite"
+                className="font-mono text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
+              >
+                Request one →
+              </a>
+            </p>
+          )}
+        </div>
+      </div>
+
+      <SectionHeader number="K" label="Use Your Own API Keys" />
 
       <div className="space-y-4 border border-stone-300 bg-white p-6 sm:p-8">
         <p className="font-serif text-base leading-relaxed text-stone-800">
           By default, Proofiness uses the embedded API keys and gates access by invite code with
-          a daily dossier cap. If you'd rather use your own Anthropic and Tavily keys —{" "}
+          a lifetime dossier cap. If you'd rather use your own Anthropic and Tavily keys —{" "}
           <strong>unlimited dossiers, billed directly to your accounts</strong> — set them here.
         </p>
         <p className="font-serif text-sm italic leading-relaxed text-stone-700">

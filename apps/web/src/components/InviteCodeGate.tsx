@@ -41,14 +41,14 @@ export function InviteCodeGate({ reason, onAccepted }: Props) {
           )}
         </p>
         <p className="font-serif text-sm leading-relaxed text-stone-700">
-          Don't have a code? Email{" "}
+          Don't have a code?{" "}
           <a
-            href="mailto:info@proofiness.org?subject=Proofiness%20invite%20request"
+            href="#/request-invite"
             className="font-mono text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
           >
-            info@proofiness.org
-          </a>
-          {" "}with a sentence about how you'd use it.
+            Try a claim →
+          </a>{" "}
+          If it's specific enough to fact-check, we'll issue you one on the spot.
         </p>
 
         <label className="block">

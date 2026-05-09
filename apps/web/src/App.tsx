@@ -8,9 +8,11 @@ import { StaticPage } from "./components/StaticPage.js";
 import { LandingPage } from "./components/LandingPage.js";
 import { SettingsPage } from "./components/SettingsPage.js";
 import { InviteCodeGate } from "./components/InviteCodeGate.js";
+import { RequestInviteForm } from "./components/RequestInviteForm.js";
 import { getDossier, streamDossier, type DossierError } from "./lib/api.js";
 import { getInviteCode } from "./lib/invites.js";
 import { hasFullByokKeys } from "./lib/keys.js";
+import { consumePendingClaim } from "./lib/pending-claim.js";
 import {
   APP_HASH,
   buildDossierHash,
@@ -65,6 +67,8 @@ function renderRoute(route: Route) {
       return <StaticPage slug={route.slug} />;
     case "settings":
       return <SettingsPage />;
+    case "request-invite":
+      return <RequestInviteForm />;
     case "unknown":
     default:
       return <LandingPage />;
@@ -183,6 +187,19 @@ function AppRoute() {
       },
     );
   }
+
+  // Handoff from the request-invite flow: if the user just minted a code and
+  // asked us to start the dossier on the same claim, sessionStorage holds the
+  // normalized claim. Consume + auto-submit on mount. consumePendingClaim
+  // clears the slot so a refresh doesn't re-trigger the auto-submit.
+  useEffect(() => {
+    const pending = consumePendingClaim();
+    if (pending) {
+      void handleSubmit(pending, undefined);
+    }
+    // intentional: run once on mount only
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleSuggestionClick(suggestion: string) {
     handleSubmit(suggestion, undefined);

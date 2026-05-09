@@ -98,6 +98,32 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 4,
+    up: (db) => {
+      // Source of truth for accepted invite codes. Pre-v4, the only source was
+      // INVITE_CODES (env var) read on each request — adding a code required
+      // a redeploy. This table lets the auto-mint endpoint add codes at
+      // runtime, while preserving the env-var workflow as a startup seed
+      // (see seedInviteCodesFromEnv below).
+      //
+      // source: 'env' (seeded from INVITE_CODES) | 'auto' (Claude-approved
+      // self-service mint) | 'manual' (admin CLI).
+      // request_ip: only set for source='auto'; nulled for env/manual.
+      // revoked_at: soft-revoke; non-null means the code is no longer accepted.
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS invite_codes (
+          code        TEXT PRIMARY KEY,
+          source      TEXT NOT NULL,
+          created_at  TEXT NOT NULL,
+          request_ip  TEXT,
+          revoked_at  TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_invite_codes_created_at ON invite_codes(created_at);
+        CREATE INDEX IF NOT EXISTS idx_invite_codes_source_ip   ON invite_codes(source, request_ip);
+      `);
+    },
+  },
 ];
 
 function runMigrations(db: Database.Database): void {
@@ -245,4 +271,132 @@ export function getInviteCodeLifetimeUsage(code: string): number {
     .prepare(`SELECT COALESCE(SUM(count), 0) AS total FROM invite_usage WHERE code = ?`)
     .get(code) as { total: number };
   return row.total;
+}
+
+// ─── Invite-code lifecycle (v4) ──────────────────────────────────────────────
+// Codes live in invite_codes; usage counters live in invite_usage (above).
+// The two tables are loosely linked by the `code` column — invite_usage rows
+// can outlive their invite_codes row (revoked codes keep their usage history)
+// and vice versa (a freshly-minted code has no usage rows yet).
+
+export type InviteCodeSource = "env" | "auto" | "manual";
+
+export interface InviteCodeRow {
+  code: string;
+  source: InviteCodeSource;
+  createdAt: string;
+  requestIp: string | null;
+  revokedAt: string | null;
+}
+
+// Insert a code if not already present. Returns true on insert, false if the
+// code already existed (env-seed shouldn't clobber a manual/auto entry, and
+// auto-mint uses this to detect collisions and re-roll).
+export function insertInviteCode(
+  code: string,
+  source: InviteCodeSource,
+  requestIp: string | null,
+): boolean {
+  const db = getDb();
+  const result = db
+    .prepare(
+      `INSERT OR IGNORE INTO invite_codes (code, source, created_at, request_ip)
+       VALUES (?, ?, ?, ?)`,
+    )
+    .run(code, source, new Date().toISOString(), requestIp);
+  return result.changes > 0;
+}
+
+// True if the code exists and has not been revoked. The gate calls this
+// before consuming quota.
+export function isInviteCodeAccepted(code: string): boolean {
+  const db = getDb();
+  const row = db
+    .prepare(`SELECT revoked_at FROM invite_codes WHERE code = ?`)
+    .get(code) as { revoked_at: string | null } | undefined;
+  if (!row) return false;
+  return row.revoked_at === null;
+}
+
+// Soft-revoke. Returns true if a row was updated (idempotent: revoking an
+// already-revoked code returns false). Usage history is preserved.
+export function revokeInviteCode(code: string): boolean {
+  const db = getDb();
+  const result = db
+    .prepare(`UPDATE invite_codes SET revoked_at = ? WHERE code = ? AND revoked_at IS NULL`)
+    .run(new Date().toISOString(), code);
+  return result.changes > 0;
+}
+
+// Count auto-mints that happened today (UTC) — used to enforce the
+// site-wide daily cap on the auto-mint endpoint.
+export function countAutoMintsSince(isoTimestamp: string): number {
+  const db = getDb();
+  const row = db
+    .prepare(
+      `SELECT COUNT(*) AS n FROM invite_codes
+       WHERE source = 'auto' AND created_at >= ?`,
+    )
+    .get(isoTimestamp) as { n: number };
+  return row.n;
+}
+
+// Count auto-mints from a given IP within a recent window — used to enforce
+// the per-IP successful-mint rate limit (refinement attempts are free; only
+// successful mints burn the quota).
+export function countAutoMintsByIpSince(ip: string, isoTimestamp: string): number {
+  const db = getDb();
+  const row = db
+    .prepare(
+      `SELECT COUNT(*) AS n FROM invite_codes
+       WHERE source = 'auto' AND request_ip = ? AND created_at >= ?`,
+    )
+    .get(ip, isoTimestamp) as { n: number };
+  return row.n;
+}
+
+// All codes, newest first. Joined with invite_usage to surface lifetime usage
+// per code — keeps the admin CLI's list view in one query.
+export function listInviteCodes(): Array<InviteCodeRow & { usage: number }> {
+  const db = getDb();
+  const rows = db
+    .prepare(
+      `SELECT
+         c.code        AS code,
+         c.source      AS source,
+         c.created_at  AS createdAt,
+         c.request_ip  AS requestIp,
+         c.revoked_at  AS revokedAt,
+         COALESCE((SELECT SUM(count) FROM invite_usage u WHERE u.code = c.code), 0) AS usage
+       FROM invite_codes c
+       ORDER BY c.created_at DESC`,
+    )
+    .all() as Array<InviteCodeRow & { usage: number }>;
+  return rows;
+}
+
+// Idempotent. Reads INVITE_CODES env, inserts each as source='env'. Existing
+// rows (any source) are left alone — env var stays a seed, never an authority.
+// Called from invites.ts on each gate check (cached) and from the admin CLI.
+export function seedInviteCodesFromEnv(envValue: string | undefined): number {
+  const codes = (envValue ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (codes.length === 0) return 0;
+  const db = getDb();
+  const now = new Date().toISOString();
+  const stmt = db.prepare(
+    `INSERT OR IGNORE INTO invite_codes (code, source, created_at, request_ip)
+     VALUES (?, 'env', ?, NULL)`,
+  );
+  const tx = db.transaction((items: string[]): number => {
+    let inserted = 0;
+    for (const c of items) {
+      const result = stmt.run(c, now);
+      if (result.changes > 0) inserted += 1;
+    }
+    return inserted;
+  });
+  return tx(codes);
 }

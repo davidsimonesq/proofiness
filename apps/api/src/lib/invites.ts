@@ -4,9 +4,14 @@
 // search costs from anonymous traffic. This module is the gate.
 //
 // Configuration (env):
-//   INVITE_CODES          — comma-separated list of accepted codes. Empty/unset
-//                           means the gate is OFF (every request passes).
-//                           Treat empty as a positive choice for local dev only.
+//   INVITE_CODES          — comma-separated list of accepted codes seeded
+//                           into the DB on first run. Adding a code via env
+//                           only affects fresh DBs (or freshly-added codes);
+//                           existing rows are never clobbered. Auto-mint and
+//                           the admin CLI can also add codes at runtime.
+//                           Empty + AUTO_MINT_ENABLED=false = gate is OFF
+//                           (every request passes). Treat empty as a positive
+//                           choice for local dev only.
 //   INVITE_DOSSIER_LIMIT  — max dossiers per code, LIFETIME (across all days
 //                           for that code, ever). Default 10.
 //                           At ~$0.20–0.30 per cold dossier, 10 lifetime is
@@ -14,15 +19,19 @@
 //                           the cap, it's exhausted permanently — no daily
 //                           reset, no leakage. Bump the env value or hand
 //                           the user a fresh code if they need more.
+//   AUTO_MINT_ENABLED     — when "true", /api/request-invite is live and
+//                           the gate is ON regardless of INVITE_CODES.
 //
-// The check is applied only to /api/dossier (the expensive endpoint).
-// Read-only routes (GET /api/dossier/:id, GET /api/dossiers) are not gated;
-// reading a saved dossier costs nothing.
-//
-// History is still tracked per-day in invite_usage(code, day, count) so the
-// audit trail / future per-code usage UI gets the breakdown for free.
+// Acceptance source of truth is the invite_codes table; the env var is just
+// a startup seed. Removing a code from INVITE_CODES does NOT revoke it
+// (would be surprising); use `npm run admin-codes revoke <code>` to revoke.
 
-import { getInviteCodeLifetimeUsage, tryConsumeInviteQuota } from "./db.js";
+import {
+  getInviteCodeLifetimeUsage,
+  isInviteCodeAccepted,
+  seedInviteCodesFromEnv,
+  tryConsumeInviteQuota,
+} from "./db.js";
 
 export interface InviteCheckResult {
   ok: boolean;
@@ -30,17 +39,23 @@ export interface InviteCheckResult {
   reason?: string;
 }
 
-const allowedCodesCache: { value: Set<string> | null } = { value: null };
+let _seeded = false;
+function ensureSeeded(): void {
+  if (_seeded) return;
+  _seeded = true;
+  const inserted = seedInviteCodesFromEnv(process.env.INVITE_CODES);
+  if (inserted > 0) {
+    console.log(`[invites] seeded ${inserted} invite code(s) from INVITE_CODES env`);
+  }
+}
 
-function getAllowedCodes(): Set<string> {
-  if (allowedCodesCache.value) return allowedCodesCache.value;
-  const raw = (process.env.INVITE_CODES ?? "").trim();
-  const codes = raw
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  allowedCodesCache.value = new Set(codes);
-  return allowedCodesCache.value;
+function isAutoMintEnabled(): boolean {
+  return process.env.AUTO_MINT_ENABLED === "true";
+}
+
+function isCostGateEnabled(): boolean {
+  const hasEnvCodes = (process.env.INVITE_CODES ?? "").trim().length > 0;
+  return hasEnvCodes || isAutoMintEnabled();
 }
 
 function getLifetimeLimit(): number {
@@ -64,13 +79,14 @@ function todayUtc(): string {
  * same code can't over-count (race condition would otherwise let a code
  * sneak past the cap by exactly the number of concurrent in-flight requests).
  *
- * Special case: if INVITE_CODES env is empty/unset, the gate is OFF and every
- * request passes (no quota tracked). For local dev only. Production instances
- * MUST set INVITE_CODES.
+ * Special case: if no cost-gate signal is set (empty INVITE_CODES AND
+ * auto-mint disabled), the gate is OFF and every request passes (no quota
+ * tracked). For local dev only. Production instances MUST set at least one
+ * of INVITE_CODES or AUTO_MINT_ENABLED=true.
  */
 export function checkInviteAndConsume(code: string | undefined): InviteCheckResult {
-  const allowed = getAllowedCodes();
-  if (allowed.size === 0) return { ok: true, status: 200 };
+  if (!isCostGateEnabled()) return { ok: true, status: 200 };
+  ensureSeeded();
 
   const trimmed = (code ?? "").trim();
   if (!trimmed) {
@@ -80,7 +96,7 @@ export function checkInviteAndConsume(code: string | undefined): InviteCheckResu
       reason: "missing invite code — set the x-invite-code request header",
     };
   }
-  if (!allowed.has(trimmed)) {
+  if (!isInviteCodeAccepted(trimmed)) {
     return { ok: false, status: 401, reason: "invalid invite code" };
   }
 

@@ -220,6 +220,72 @@ export async function getDossier(id: string): Promise<Dossier> {
   return body.dossier;
 }
 
+// Self-service invite mint. Submits a claim; server runs the normalizer on
+// it. Returns a discriminated union the form renders directly.
+export type RequestInviteResult =
+  | { status: "approved"; code: string; normalizedClaim: string }
+  | { status: "needs_more_detail"; reason: string; suggestions: string[] }
+  | { status: "feature_disabled"; detail: string }
+  | { status: "daily_cap_reached"; detail: string }
+  | { status: "ip_rate_limit"; detail: string }
+  | { status: "invalid_request"; detail: string }
+  | { status: "error"; detail: string };
+
+export async function requestInvite(claim: string): Promise<RequestInviteResult> {
+  let res: Response;
+  try {
+    res = await fetch(apiUrl("/api/request-invite"), {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ claim }),
+    });
+  } catch (err) {
+    return {
+      status: "error",
+      detail: err instanceof Error ? err.message : String(err),
+    };
+  }
+
+  let body: Record<string, unknown> = {};
+  try {
+    body = (await res.json()) as Record<string, unknown>;
+  } catch {
+    return {
+      status: "error",
+      detail: `Server returned ${res.status} with no JSON body`,
+    };
+  }
+
+  if (res.ok) {
+    if (body.status === "approved" && typeof body.code === "string") {
+      return {
+        status: "approved",
+        code: body.code,
+        normalizedClaim: typeof body.normalizedClaim === "string" ? body.normalizedClaim : claim,
+      };
+    }
+    if (body.status === "needs_more_detail") {
+      return {
+        status: "needs_more_detail",
+        reason: typeof body.reason === "string" ? body.reason : "Please refine your claim.",
+        suggestions: Array.isArray(body.suggestions)
+          ? (body.suggestions as unknown[]).filter((s): s is string => typeof s === "string")
+          : [],
+      };
+    }
+    return { status: "error", detail: `Unexpected response shape: ${JSON.stringify(body).slice(0, 200)}` };
+  }
+
+  // Map known error codes to typed variants the form can render distinctly.
+  const errorCode = typeof body.error === "string" ? body.error : "";
+  const detail = typeof body.detail === "string" ? body.detail : `Request failed (${res.status})`;
+  if (errorCode === "feature_disabled") return { status: "feature_disabled", detail };
+  if (errorCode === "daily_cap_reached") return { status: "daily_cap_reached", detail };
+  if (errorCode === "ip_rate_limit") return { status: "ip_rate_limit", detail };
+  if (errorCode === "invalid_request") return { status: "invalid_request", detail };
+  return { status: "error", detail };
+}
+
 export async function listDossiers(opts: { cursor?: string; limit?: number } = {}): Promise<DossierList> {
   const params = new URLSearchParams();
   if (opts.cursor) params.set("cursor", opts.cursor);

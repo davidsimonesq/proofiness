@@ -4,6 +4,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import { dossierRoutes } from "./routes/dossier.js";
+import { requestInviteRoutes } from "./routes/request-invite.js";
 
 // In production (e.g. Railway, Docker, any container platform), bind to all
 // interfaces so the platform's load balancer can reach us. In local dev,
@@ -44,11 +45,18 @@ async function main(): Promise<void> {
     done();
   });
 
-  // CORS: pass an array if multiple origins, a string if just one. Also allow
-  // the x-invite-code request header so the browser preflight succeeds.
+  // CORS: pass an array if multiple origins, a string if just one. Allow the
+  // x-invite-code header (cost gate) and the x-anthropic-key / x-tavily-key
+  // headers (BYOK) so the browser preflight succeeds in cross-origin deploys.
   await app.register(cors, {
     origin: WEB_ORIGINS.length === 1 ? WEB_ORIGINS[0] : WEB_ORIGINS,
-    allowedHeaders: ["content-type", "accept", "x-invite-code"],
+    allowedHeaders: [
+      "content-type",
+      "accept",
+      "x-invite-code",
+      "x-anthropic-key",
+      "x-tavily-key",
+    ],
     exposedHeaders: ["x-request-id"],
   });
 
@@ -63,6 +71,7 @@ async function main(): Promise<void> {
 
   app.get("/health", async () => ({ ok: true }));
   await app.register(dossierRoutes);
+  await app.register(requestInviteRoutes);
 
   try {
     await app.listen({ port: PORT, host: HOST });
