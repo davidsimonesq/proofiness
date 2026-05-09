@@ -32,10 +32,7 @@ export function InviteCodeGate({ reason, onAccepted }: Props) {
       </div>
       <div className="space-y-4 p-5">
         <p className="font-serif text-base leading-relaxed text-stone-800">
-          Proofiness is in private beta. Each dossier costs real money in API calls, so
-          access is gated by invite code. Each code is good for a fixed number of dossiers
-          total — when you've used your allotment, you can request a new code or switch to
-          your own API keys.{" "}
+          Every claim you submit to Proofiness triggers multiple calls to AI and web-search providers that accrue charges. With an invite code, you'll be able to submit five claims &dash; that is, create five dossiers &mdash; free of charge. When you've used your allotment, you can obtain your own API keys from those providers and create an unlimited number of dossiers, with the charges billed to you.{" "}
           {reason && (
             <span className="font-serif italic text-stone-600">— {reason}</span>
           )}
@@ -46,9 +43,9 @@ export function InviteCodeGate({ reason, onAccepted }: Props) {
             href="#/request-invite"
             className="font-mono text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
           >
-            Try a claim →
+            Submit your first claim → 
           </a>{" "}
-          If it's specific enough to fact-check, we'll issue you one on the spot.
+          If it's specific enough to fact-check, we'll issue you an invite code on the spot.
         </p>
 
         <label className="block">

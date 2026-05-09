@@ -1,7 +1,6 @@
 import { useState } from "react";
 import type { Dossier } from "@proofiness/shared-types";
 import { SubClaimCard } from "./SubClaimCard.js";
-import { LimitsDisclosure } from "./LimitsDisclosure.js";
 import { CruxSummary } from "./CruxSummary.js";
 import { TopLineAssessment } from "./TopLineAssessment.js";
 import { ShareButton } from "./ShareButton.js";
@@ -72,8 +71,6 @@ export function DossierView({ dossier }: Props) {
       {dossier.assessment && <TopLineAssessment assessment={dossier.assessment} />}
 
       {dossier.crux && <CruxSummary crux={dossier.crux} subClaims={dossier.subClaims} />}
-
-      <LimitsDisclosure />
 
       {/* DEEP PATH — opt-in. The 5-minute case file. */}
       {!showFull ? (

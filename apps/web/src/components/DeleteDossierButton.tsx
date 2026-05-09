@@ -62,12 +62,11 @@ export function DeleteDossierButton({ dossierId }: Props) {
             </div>
             <div className="space-y-3 p-5">
               <p className="font-serif text-sm leading-relaxed text-stone-800">
-                This will permanently remove the dossier from the database. The
-                permalink will stop working and the case file is gone — there's
+                This will permanently remove the dossier from the database. There is
                 no undo.
               </p>
               <p className="font-serif text-sm italic leading-relaxed text-stone-700">
-                Anyone you've shared the link with will see "Dossier not found."
+                The link will stop working. Anyone you've shared it with will see "Dossier not found."
               </p>
 
               {phase === "error" && errorMsg && (

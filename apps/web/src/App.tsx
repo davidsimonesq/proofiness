@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Dossier, ProgressEvent, ProgressStep } from "@proofiness/shared-types";
 import { ClaimInput } from "./components/ClaimInput.js";
 import { DossierView } from "./components/DossierView.js";
+import { LimitsDisclosure } from "./components/LimitsDisclosure.js";
 import { ProgressIndicator } from "./components/ProgressIndicator.js";
 import { HistoryList } from "./components/HistoryList.js";
 import { StaticPage } from "./components/StaticPage.js";
@@ -236,7 +237,10 @@ function AppRoute() {
       {usingByok && <ByokBadge />}
 
       {(phase.kind === "idle" || phase.kind === "error") && (
-        <ClaimInput onSubmit={handleSubmit} busy={false} initialClaim={seedClaim} />
+        <div className="space-y-4">
+          <LimitsDisclosure />
+          <ClaimInput onSubmit={handleSubmit} busy={false} initialClaim={seedClaim} />
+        </div>
       )}
 
       {phase.kind === "error" && phase.error.kind !== "invite_required" && (
@@ -255,7 +259,7 @@ function AppRoute() {
       )}
 
       <section className="mt-12">
-        <SectionHeader number="02" label="Recent Dossiers" />
+        <SectionHeader label="Recent Dossiers" />
         <HistoryList />
       </section>
     </>
@@ -410,11 +414,14 @@ function DossierRoute({ id }: { id: string }) {
   );
 }
 
-// Reusable numbered-section header used across app + dossier + static views.
-export function SectionHeader({ number, label }: { number: string; label: string }) {
+// Reusable section header used across app + dossier + static views. The
+// `number` slot is optional — pages that have a meaningful sequence (the
+// landing page, the deep dossier view) use it; standalone sections omit it
+// so an orphan "02" doesn't appear without a preceding "01".
+export function SectionHeader({ number, label }: { number?: string; label: string }) {
   return (
     <div className="mb-3 flex items-baseline gap-3">
-      <span className="font-mono text-xs text-stone-500">{number}</span>
+      {number && <span className="font-mono text-xs text-stone-500">{number}</span>}
       <span className="pf-label-loud">{label}</span>
       <span className="h-px flex-1 bg-stone-300" />
     </div>

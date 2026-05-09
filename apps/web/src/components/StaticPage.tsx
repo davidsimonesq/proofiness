@@ -124,7 +124,7 @@ function AboutContent() {
       </Para>
 
       <Subhead>How an assessment is built</Subhead>
-      <Para>Each dossier runs through a ten-step pipeline:</Para>
+      <Para>Each dossier runs through a 10-step pipeline:</Para>
       <Bullets
         items={[
           <>Normalize the claim (refuse vague inputs with refinement suggestions).</>,
@@ -196,11 +196,10 @@ function PrivacyContent() {
       <LastUpdated date="2026-05-08" />
 
       <CounselNote>
-        Proofiness is currently a developer-stage, single-user, locally-hosted tool. This policy
+        Proofiness is currently a single-user, locally-hosted tool. This policy
         describes how the open-source distribution works as shipped from the repository. Any
         deployed instance (multi-user, hosted, or commercial) <strong>must publish its own
-        privacy notice</strong> describing what changes, and should be reviewed by qualified
-        counsel before launch.
+        privacy notice</strong> describing what changes.
       </CounselNote>
 
       <Subhead>1. Summary</Subhead>
@@ -217,7 +216,7 @@ function PrivacyContent() {
       <Bullets
         items={[
           <>
-            <strong>The claim text</strong> you typed into the input field.
+            <strong>The claim text</strong> you typed or pasted into the input field.
           </>,
           <>
             <strong>Optional context</strong> if you provided it (where you encountered the
@@ -249,14 +248,14 @@ function PrivacyContent() {
       </Para>
       <Para>
         Cached fetches of source articles and source-classification decisions are kept in memory
-        only (LRU caches with TTLs of one hour and twenty-four hours respectively); they do not
+        only (LRU caches with TTLs of one hour and 24 hours respectively); they do not
         persist across server restarts.
       </Para>
 
       <Subhead>4. Third-party processors</Subhead>
       <Para>
-        Each dossier triggers calls to the following third parties. Each has its own privacy
-        practices governing what they do with the data we send.
+        Every dossier triggers calls to the following third parties. Each has its own privacy
+        practices governing what it does with the data we send.
       </Para>
       <Bullets
         items={[
@@ -264,13 +263,13 @@ function PrivacyContent() {
             <strong>Anthropic</strong> — the language model provider. Receives the submitted
             claim, the sub-claims derived from it, the source content (titles + extracted text
             snippets) retrieved for it, and intermediate outputs (steelman pairs, crux, etc.).
-            Used for all generative steps (decomposition, classification, steelman generation,
-            contestation labeling, crux identification, and the top-line assessment). See
-            anthropic.com/legal for their privacy practices.
+            Used for all generative steps (decomposition, classification, steelman-generation,
+            contestation-labeling, crux-identification, and the top-line assessment). See
+            anthropic.com/legal for its privacy practices.
           </>,
           <>
             <strong>Tavily</strong> — the web-search provider. Receives search queries derived
-            from the claim. See tavily.com for their privacy practices.
+            from the claim. See tavily.com for its privacy practices.
           </>,
           <>
             <strong>Source publishers</strong> — when Proofiness fetches the full text of an
@@ -296,7 +295,7 @@ function PrivacyContent() {
       <Bullets
         items={[
           <>
-            The keys are stored only in your browser's localStorage. They are{" "}
+            The keys are stored only in your browser's local storage. They are{" "}
             <strong>never</strong> sent to a Proofiness database or written to disk.
           </>,
           <>
@@ -309,11 +308,11 @@ function PrivacyContent() {
             <strong>not logged</strong> in any access log, error log, or request trace.
           </>,
           <>
-            Anthropic and Tavily then bill <strong>your accounts directly</strong> for the
-            calls; the embedded server keys are not used for those requests.
+            <strong>Anthropic and Tavily will then bill your accounts directly</strong> for the
+            calls. The server keys embedded in the app will no longer be used.
           </>,
           <>
-            Clearing your keys (Settings → Clear my keys) removes them from localStorage
+            Clearing your keys (Settings → Clear my keys) removes them from local storage
             immediately; subsequent requests revert to the embedded-key path.
           </>,
         ]}
@@ -324,7 +323,7 @@ function PrivacyContent() {
         Proofiness sets no cookies. No analytics scripts (Google Analytics, Plausible, etc.) are
         loaded. The only third-party network request initiated by the web app itself is to
         Google Fonts to load the IBM Plex font family used in the UI; no other content from
-        Google is loaded and no Google cookies are set as a result.
+        Google is loaded, and no Google cookies are set as a result.
       </Para>
 
       <Subhead>7. Sharing</Subhead>
@@ -341,8 +340,10 @@ function PrivacyContent() {
         all the data: the SQLite database file is on your machine, and you can inspect, export,
         or delete it at will. To delete your entire history, delete the database file
         (<Code>apps/api/data/proofiness.db</Code>) and restart the API server, which will create
-        a fresh empty database. To delete a single dossier, the API exposes a delete operation
-        used internally; a UI delete control is not yet exposed but is on the roadmap.
+        a fresh empty database. To delete a single dossier, use the "Delete" control on the
+        dossier view (next to "Share") or the per-row delete in the history list. Both are
+        gated by the invite code that created the dossier, so the browser holding that code is
+        the only one that can authorize the removal.
       </Para>
 
       <Subhead>9. Children</Subhead>
@@ -381,14 +382,17 @@ function PrivacyContent() {
           <>
             <strong>Dossiers persist server-side</strong> in the database at{" "}
             <Code>/data/proofiness.db</Code> on a Railway volume. Anyone who knows a dossier's
-            UUID URL can read it; treat dossier URLs as semi-public. To request deletion of a
-            specific dossier or of all dossiers associated with your invite code, email{" "}
-            <ContactEmail />.
+            UUID URL can read it; treat dossier URLs as semi-public. Dossiers you created via
+            an invite code can be deleted from the dossier view or the history list — the
+            delete is gated by that same code, so only your browser can authorize it. For
+            bulk deletion across an invite code (e.g., remove everything I ever generated),
+            email <ContactEmail />.
           </>,
           <>
             <strong>BYOK requests skip the invite-code quota entirely</strong> (no usage row
-            is written), but the resulting dossier is still saved to the server-side database
-            the same way as any other dossier.
+            is written). The resulting dossier is saved to the server-side database the same
+            way as any other dossier; because no invite code is on file, the web client can't
+            authorize a delete on it — email <ContactEmail /> for removal.
           </>,
         ]}
       />
@@ -421,8 +425,7 @@ function TermsContent() {
         These Terms apply to the open-source Proofiness project as shipped from its GitHub
         repository. If you operate a deployed instance — multi-user, hosted, or commercial —
         <strong> you should publish your own Terms</strong> reflecting your jurisdiction, your
-        contractual relationship with users, and any commercial arrangements, reviewed by
-        qualified counsel.
+        contractual relationship with users, and any commercial arrangements.
       </CounselNote>
 
       <Subhead>1. Acceptance</Subhead>
@@ -450,10 +453,10 @@ function TermsContent() {
       <Subhead>3. AI accuracy disclaimer</Subhead>
       <Para>
         The assessments and synthesis produced by Proofiness are generated by large language
-        models reading web search results and source articles. <strong>These outputs may be
+        models reading web-search results and source articles. <strong>These outputs may be
         wrong</strong> — they may contain factual errors, misclassifications, mischaracterizations
         of sources, biased framings, or hallucinated citations. The confidence dial is a
-        calibrated signal, not a guarantee. The dossier underneath every assessment exists for
+        calibrated signal &mdash; not a guarantee. The dossier underneath every assessment exists for
         a reason: when an assessment doesn't feel right, you are expected to expand it and check
         the sources directly.
       </Para>
@@ -464,7 +467,7 @@ function TermsContent() {
       </Para>
 
       <Subhead>4. Acceptable use</Subhead>
-      <Para>You agree not to use the Service to:</Para>
+      <Para>You agree not to use the Service to&nbsp;&mdash;</Para>
       <Bullets
         items={[
           <>Submit content that is unlawful, harassing, defamatory, or threatening.</>,
@@ -503,9 +506,9 @@ function TermsContent() {
         The Proofiness source code is open-source under the license declared in the repository's
         <Code>LICENSE</Code> file. The claims you submit remain yours; the dossiers Proofiness
         produces from them are made available to you for your own use. Source content fetched
-        from third-party publishers remains subject to those publishers' rights and licenses;
+        from third-party publishers remains subject to those publishers' rights and licenses.
         Proofiness fetches and extracts text under fair-use principles for the purpose of
-        producing the dossier.
+        producing the dossiers.
       </Para>
 
       <Subhead>8. Third-party services</Subhead>
@@ -555,7 +558,7 @@ function HelpContent() {
       <Para>
         Every dossier opens with a single calibrated assessment: a label (one of six), a
         confidence dial (low / moderate / high), and a one- or two-sentence synthesis. Read
-        these. They are the 30-second answer.
+        these &mdash; they are the 30-second answer.
       </Para>
 
       <Subhead>What the labels mean</Subhead>
@@ -570,7 +573,7 @@ function HelpContent() {
           </>,
           <>
             <Code>Mixed — hinges on …</Code> — both sides have substantive support; the answer
-            depends on resolving a specific contested point named after the dash.
+            depends on resolving a specific contested point.
           </>,
           <>
             <Code>Definitional — depends on what you mean by …</Code> — the empirical core is
@@ -602,7 +605,7 @@ function HelpContent() {
       <Para>
         One filled dot = low confidence. Thin evidence base, sources mostly advocacy or
         single-domain, secondary reporting without primary-source provenance. Treat the
-        assessment as a starting point, not a settled call.
+        assessment as a starting point and not a settled call.
       </Para>
 
       <Subhead>The deep path</Subhead>
@@ -615,7 +618,7 @@ function HelpContent() {
 
       <Subhead>What to do if the assessment seems wrong</Subhead>
       <Para>
-        Open the case file. Three things to check, in order:
+        Open the case file. Check these three things, in order:
       </Para>
       <Bullets
         items={[
@@ -632,35 +635,30 @@ function HelpContent() {
           </>,
           <>
             <strong>The provenance chain.</strong> For sources that are secondary reporting,
-            the chain shows what they're actually citing. Many widely-repeated "facts" trace
+            the chain shows what they're actually citing. Many widely repeated "facts" trace
             back to a single weak study. If the chain ends at a primary source you can read,
             read it.
           </>,
         ]}
       />
       <Para>
-        When you find a real disagreement with the assessment, the source links are the
-        receipts you need to argue with it.
+        When you find a real disagreement with the assessment, these source links are the
+        receipts you're disagreeing with.
       </Para>
 
       <Subhead>Using your own API keys</Subhead>
       <Para>
-        Each invite code is capped at a fixed number of dossiers, total — when you've used
-        your allotment, the cost gate refuses further requests on that code. To keep going
-        without asking for a new code, supply your own Anthropic + Tavily keys in{" "}
+        Each invite code is capped at a fixed number of free dossiers. When you've used
+        your allotment, the app refuses further requests on that code. To create more dossiers, supply your own Anthropic and Tavily API keys in{" "}
         <a
           href="#/settings"
           className="text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
         >
           Settings
         </a>
-        . Both keys are required together. Once set, the cost gate is bypassed entirely and
-        you have unlimited dossiers. Anthropic and Tavily bill your accounts directly; a
-        typical cold dossier costs roughly $0.20–0.30 in Anthropic credit plus ~20 Tavily
-        searches (Tavily's free tier covers 1,000 searches/month, enough for ~50 cold
-        dossiers). If you don't already have keys, sign up at console.anthropic.com and
-        tavily.com. Keys live only in your browser's localStorage, sent per-request, never
-        stored on the server. See{" "}
+        . Both keys are required together. Once set,
+        you can create an unlimited number of dossiers, and Anthropic and Tavily will bill you directly. If you don't already have keys, sign up at console.anthropic.com and
+        tavily.com. Keys live only in your browser's local storage, are sent per-request, and are never stored on the server. See{" "}
         <a
           href="#/privacy"
           className="text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
@@ -670,21 +668,37 @@ function HelpContent() {
         §5 for the details.
       </Para>
 
+      <Subhead>Deleting a dossier</Subhead>
+      <Para>
+        From the dossier view, click "Delete" next to "Share" — or use the per-row delete in
+        the history list. A confirm step protects against accidents; once deleted, the
+        permalink stops working and there's no undo. Delete is gated by the invite code that
+        created the dossier, so your browser only sees the delete controls for dossiers it
+        created. If you've switched browsers or cleared local storage, re-enter your code in{" "}
+        <a
+          href="#/settings"
+          className="text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
+        >
+          Settings
+        </a>{" "}
+        first. Dossiers created via your own API keys (BYOK) can't be deleted from the
+        web — email the operator if you need them removed.
+      </Para>
+
       <Subhead>Common questions</Subhead>
 
       <Para>
-        <strong>How long does an assessment take?</strong> Cold dossiers take 60–180 seconds.
-        The pipeline is making real searches, fetching real sources, and running the LLM ten
-        times. Subsequent dossiers on overlapping topics are faster because the fetch and
-        classification caches warm up.
+        <strong>How long does an assessment take?</strong> A new dossier takes 1 to 3 minutes.
+        The app is making real searches, fetching real sources, and running the LLM 10
+        times. Subsequent dossiers on overlapping topics are faster.
       </Para>
 
       <Para>
         <strong>Why didn't I get a clean "true" or "false"?</strong> Because most contested
-        public claims don't resolve into "true" or "false." They resolve into "definitional,"
+        public claims don't resolve into "true" or "false"; they resolve into "definitional,"
         "mixed," or "value-laden." Forcing a binary verdict on those is what gets fact-checkers
         attacked from all sides. Proofiness's six labels are designed to admit the structure of
-        the disagreement, not flatten it.
+        the disagreement, rather than flatten it.
       </Para>
 
       <Para>
@@ -708,8 +722,8 @@ function HelpContent() {
         <strong>Can I share an assessment without sharing the case file?</strong> The Share
         button copies a URL to the dossier's permalink, which includes both the assessment and
         the case file. There's intentional friction (an acknowledgment checkbox) to discourage
-        screenshot-as-verdict sharing — strip the case file from the assessment and you've
-        thrown away the receipts.
+        screenshot-as-verdict sharing, since stripping the case file from the assessment is
+        throwing away the receipts.
       </Para>
 
       <Subhead>Reporting issues</Subhead>

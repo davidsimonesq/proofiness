@@ -28,15 +28,15 @@ export function ClaimInput({ onSubmit, busy, initialClaim }: Props) {
   return (
     <form onSubmit={handleSubmit} className="border border-stone-300 bg-white">
       <div className="border-b border-stone-300 bg-stone-100 px-4 py-2">
-        <span className="pf-label-loud">Factual Allegation To Test</span>
+        <span className="pf-label-loud">Factual Claim To Test</span>
       </div>
       <div className="p-4">
         <label className="block">
-          <span className="pf-label">Paste claim verbatim</span>
+          <span className="pf-label">Type or paste the claim verbatim</span>
           <textarea
             value={claim}
             onChange={(e) => setClaim(e.target.value)}
-            placeholder="One sentence to a paragraph. From news, social media, conversation."
+            placeholder="Enter one or two sentences &mdash; a paragraph at most. From news, social media, conversation, etc."
             rows={4}
             className="mt-2 block w-full border border-stone-300 bg-stone-50 px-3 py-2 font-sans text-sm text-ink placeholder:text-stone-400 focus:border-ink focus:bg-white focus:outline-none disabled:bg-stone-200 disabled:text-stone-500"
             disabled={busy}
@@ -49,7 +49,7 @@ export function ClaimInput({ onSubmit, busy, initialClaim }: Props) {
             <textarea
               value={context}
               onChange={(e) => setContext(e.target.value)}
-              placeholder="Where you encountered it; what surrounded it. Disambiguates which version of the claim and which counterfactual matters."
+              placeholder="Where did you encounter it? What surrounded it? Additional context can improve the dossier."
               rows={2}
               className="mt-2 block w-full border border-stone-300 bg-stone-50 px-3 py-2 font-sans text-sm text-ink placeholder:text-stone-400 focus:border-ink focus:bg-white focus:outline-none disabled:bg-stone-200 disabled:text-stone-500"
               disabled={busy}
