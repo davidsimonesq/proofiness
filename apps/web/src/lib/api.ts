@@ -242,6 +242,54 @@ export async function deleteDossier(id: string): Promise<void> {
   throw new Error(detail);
 }
 
+// Pre-submit invite-code validation. Read-only; does NOT consume quota.
+// Lets the gate surface "that's not a real code" inline instead of letting
+// the user submit a claim and find out via a 401 on the dossier endpoint.
+export type InviteCheckResult =
+  | { status: "valid"; remaining?: number; limit?: number }
+  | { status: "invalid"; reason: string }
+  | { status: "exhausted"; reason: string; remaining?: number; limit?: number }
+  | { status: "error"; detail: string };
+
+export async function checkInviteCode(code: string): Promise<InviteCheckResult> {
+  let res: Response;
+  try {
+    res = await fetch(apiUrl("/api/invite/check"), {
+      method: "POST",
+      headers: { "content-type": "application/json", accept: "application/json" },
+      body: JSON.stringify({ code }),
+    });
+  } catch (err) {
+    return { status: "error", detail: err instanceof Error ? err.message : String(err) };
+  }
+  let body: Record<string, unknown> = {};
+  try {
+    body = (await res.json()) as Record<string, unknown>;
+  } catch {
+    return { status: "error", detail: `Server returned ${res.status} with no JSON body` };
+  }
+  if (res.ok && body.valid === true) {
+    return {
+      status: "valid",
+      remaining: typeof body.remaining === "number" ? body.remaining : undefined,
+      limit: typeof body.limit === "number" ? body.limit : undefined,
+    };
+  }
+  const reason = typeof body.reason === "string" ? body.reason : `Code rejected (${res.status})`;
+  if (res.status === 429) {
+    return {
+      status: "exhausted",
+      reason,
+      remaining: typeof body.remaining === "number" ? body.remaining : undefined,
+      limit: typeof body.limit === "number" ? body.limit : undefined,
+    };
+  }
+  if (res.status === 401) {
+    return { status: "invalid", reason };
+  }
+  return { status: "error", detail: reason };
+}
+
 // Self-service invite mint. Submits a claim; server runs the normalizer on
 // it. Returns a discriminated union the form renders directly.
 export type RequestInviteResult =

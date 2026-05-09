@@ -11,7 +11,7 @@ import {
   listDossiers,
   type ListCursor,
 } from "../lib/db.js";
-import { checkInviteAndConsume } from "../lib/invites.js";
+import { checkInviteAndConsume, validateInviteCode } from "../lib/invites.js";
 import { requestContext } from "../lib/request-context.js";
 
 // Pulls BYOK headers from the request. Returns both keys when both are
@@ -53,6 +53,28 @@ function readInviteCodeHeader(
 }
 
 export async function dossierRoutes(app: FastifyInstance): Promise<void> {
+  // Read-only invite-code validation. The gate calls this BEFORE storing the
+  // user's typed code so we can surface "that's not a real code" inline
+  // instead of letting them type a claim, submit, and find out via a 401.
+  // Does NOT consume quota.
+  app.post("/api/invite/check", async (req, reply) => {
+    const body = (req.body ?? {}) as { code?: string };
+    const result = validateInviteCode(body.code);
+    if (result.ok) {
+      return reply.code(200).send({
+        valid: true,
+        remaining: result.remaining,
+        limit: result.limit,
+      });
+    }
+    return reply.code(result.status).send({
+      valid: false,
+      reason: result.reason ?? "invite code not accepted",
+      remaining: result.remaining,
+      limit: result.limit,
+    });
+  });
+
   // Streaming dossier generation. Server emits progress events as the pipeline
   // runs and a final `done` event with the full dossier. Client uses fetch +
   // ReadableStream to consume.

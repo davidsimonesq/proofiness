@@ -39,6 +39,42 @@ export interface InviteCheckResult {
   reason?: string;
 }
 
+// Read-only variant — same validation logic as checkInviteAndConsume but
+// does NOT increment the quota counter. Used by the gate's pre-submit check
+// so the user finds out the code is bad before typing a claim, not after.
+export interface InviteValidationResult {
+  ok: boolean;
+  status: 401 | 429 | 200;
+  reason?: string;
+  remaining?: number;
+  limit?: number;
+}
+
+export function validateInviteCode(code: string | undefined): InviteValidationResult {
+  if (!isCostGateEnabled()) return { ok: true, status: 200 };
+  ensureSeeded();
+
+  const trimmed = (code ?? "").trim();
+  if (!trimmed) {
+    return { ok: false, status: 401, reason: "missing invite code" };
+  }
+  if (!isInviteCodeAccepted(trimmed)) {
+    return { ok: false, status: 401, reason: "invalid invite code" };
+  }
+
+  const status = getInviteCodeStatus(trimmed);
+  if (status.remaining === 0) {
+    return {
+      ok: false,
+      status: 429,
+      reason: `invite code's lifetime quota (${status.limit} dossiers) is exhausted`,
+      remaining: 0,
+      limit: status.limit,
+    };
+  }
+  return { ok: true, status: 200, remaining: status.remaining, limit: status.limit };
+}
+
 let _seeded = false;
 function ensureSeeded(): void {
   if (_seeded) return;
