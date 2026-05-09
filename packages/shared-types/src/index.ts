@@ -193,6 +193,13 @@ export interface Crux {
 
 export interface Dossier {
   id: string;
+  // Per-instance sequential number, assigned at save time. The first dossier
+  // ever saved is #1; subsequent ones increment. Used as the user-facing
+  // identifier in the UI ("Dossier · 042"). Optional in the type because
+  // saveDossier is what assigns it — pre-persistence Dossier objects in the
+  // pipeline don't have one. Anything the wire format returns to the client
+  // has it set.
+  number?: number;
   claim: string;
   context?: string;
   createdAt: string;
@@ -245,6 +252,7 @@ export interface ProgressEvent {
 // One-line summary of a stored dossier — used by GET /api/dossiers (history list).
 export interface DossierSummary {
   id: string;
+  number: number;
   claim: string;
   createdAt: string;
 }

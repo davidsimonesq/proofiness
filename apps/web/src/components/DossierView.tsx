@@ -11,10 +11,12 @@ interface Props {
   dossier: Dossier;
 }
 
-// Short fingerprint for the dossier id — gives the document a "case number"
-// feel without exposing the full UUID in the chrome.
-function shortId(id: string): string {
-  return id.replace(/-/g, "").slice(0, 8).toUpperCase();
+// Format the per-instance sequential number with 3-digit zero-padding so it
+// reads "DOSSIER · 007" — same shape as the history-list row labels for
+// visual consistency. Falls back to "—" only if a dossier somehow reached
+// the UI without being persisted (shouldn't happen in normal flow).
+function fmtNumber(n: number | undefined): string {
+  return typeof n === "number" ? String(n).padStart(3, "0") : "—";
 }
 
 export function DossierView({ dossier }: Props) {
@@ -30,7 +32,7 @@ export function DossierView({ dossier }: Props) {
       {/* Document header — case-file masthead */}
       <header className="border border-stone-400 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-300 bg-stone-100 px-4 py-2">
-          <span className="pf-label-loud">Dossier · {shortId(dossier.id)}</span>
+          <span className="pf-label-loud">Dossier · {fmtNumber(dossier.number)}</span>
           <ShareButton dossierId={dossier.id} />
         </div>
         <div className="space-y-4 p-5">
@@ -50,10 +52,10 @@ export function DossierView({ dossier }: Props) {
               <Meta term="Time" value={generatedDate.toLocaleTimeString()} />
               <Meta term="Sub-claims" value={String(dossier.subClaims.length)} />
               <Meta
-                term="Crux"
+                term="Hinges"
                 value={
                   dossier.crux?.hingesOn.length
-                    ? `${dossier.crux.hingesOn.length} hinge${dossier.crux.hingesOn.length === 1 ? "" : "s"}`
+                    ? String(dossier.crux.hingesOn.length)
                     : "—"
                 }
               />

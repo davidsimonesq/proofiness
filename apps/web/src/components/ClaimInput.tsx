@@ -3,10 +3,16 @@ import { useState, type FormEvent } from "react";
 interface Props {
   onSubmit: (claim: string, context: string | undefined) => void;
   busy: boolean;
+  // Seeds the textarea on mount. Used by the auto-mint handoff (the user
+  // just got an invite code by submitting a claim and asked us to run the
+  // dossier on it) and to keep the claim visible while the dossier streams
+  // so the user remembers what they're verifying. The component owns its
+  // own state after mount, so the user can edit + resubmit normally.
+  initialClaim?: string;
 }
 
-export function ClaimInput({ onSubmit, busy }: Props) {
-  const [claim, setClaim] = useState("");
+export function ClaimInput({ onSubmit, busy, initialClaim }: Props) {
+  const [claim, setClaim] = useState(initialClaim ?? "");
   const [context, setContext] = useState("");
   const [showContext, setShowContext] = useState(false);
 

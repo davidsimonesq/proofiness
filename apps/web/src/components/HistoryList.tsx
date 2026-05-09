@@ -58,14 +58,14 @@ export function HistoryList() {
   return (
     <>
       <ul className="divide-y divide-stone-300 border border-stone-300 bg-white">
-        {items.map((item, i) => (
+        {items.map((item) => (
           <li key={item.id}>
             <a
               href={buildDossierHash(item.id)}
               className="flex items-baseline gap-3 px-4 py-3 hover:bg-stone-50"
             >
               <span className="shrink-0 font-mono text-[0.7rem] uppercase tracking-widish text-stone-500">
-                {String(i + 1).padStart(3, "0")}
+                {String(item.number).padStart(3, "0")}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="line-clamp-2 font-sans text-sm text-ink">{item.claim}</p>

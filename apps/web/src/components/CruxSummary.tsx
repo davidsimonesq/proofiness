@@ -30,10 +30,7 @@ export function CruxSummary({ crux, subClaims }: Props) {
 
         {hingeSubClaims.length > 0 && (
           <div className="border-t border-stone-300 pt-4">
-            <p className="pf-label">
-              {hingeSubClaims.length === 1 ? "Crux sub-claim" : "Crux sub-claims"}
-            </p>
-            <ul className="mt-2 space-y-2">
+            <ul className="space-y-2">
               {hingeSubClaims.map((sc) => (
                 <li
                   key={sc.id}

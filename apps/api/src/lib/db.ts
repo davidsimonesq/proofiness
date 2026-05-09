@@ -124,6 +124,31 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 5,
+    up: (db) => {
+      // Per-instance sequential dossier number — stable user-facing identifier.
+      // First dossier ever = #1, then increments. Surfaced in the dossier
+      // header and the history list so they match (no more position-in-list
+      // confusion that drifts as new dossiers are created).
+      //
+      // SQLite quirk: can't add a UNIQUE column directly to a populated table.
+      // Workaround: add as nullable INTEGER, backfill in created_at order,
+      // then create the unique index. Backfill ties are broken by id ASC
+      // for determinism.
+      db.exec(`ALTER TABLE dossiers ADD COLUMN dossier_number INTEGER;`);
+      const rows = db
+        .prepare(`SELECT id FROM dossiers ORDER BY created_at ASC, id ASC`)
+        .all() as Array<{ id: string }>;
+      const update = db.prepare(`UPDATE dossiers SET dossier_number = ? WHERE id = ?`);
+      let n = 1;
+      for (const row of rows) {
+        update.run(n, row.id);
+        n += 1;
+      }
+      db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_dossiers_number ON dossiers(dossier_number);`);
+    },
+  },
 ];
 
 function runMigrations(db: Database.Database): void {
@@ -154,29 +179,49 @@ function runMigrations(db: Database.Database): void {
 
 // ─── CRUD ────────────────────────────────────────────────────────────────────
 
+// Persist a dossier. Atomically allocates the next per-instance sequential
+// number (MAX(dossier_number) + 1) and assigns it to d.number; the same
+// number is written to both the dedicated column and the serialized body
+// so it round-trips through future reads.
+//
+// Mutates the input — callers (the streaming route) read d.number after to
+// emit it in the SSE `done` event so the client renders the right header
+// without waiting for a re-fetch.
 export function saveDossier(d: Dossier): void {
   const db = getDb();
-  db.prepare(
-    `INSERT OR REPLACE INTO dossiers (id, claim, created_at, body, subclaim_count, has_crux)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-  ).run(
-    d.id,
-    d.claim,
-    d.createdAt,
-    JSON.stringify(d),
-    d.subClaims.length,
-    d.crux ? 1 : 0,
-  );
+  db.transaction(() => {
+    const row = db
+      .prepare(`SELECT COALESCE(MAX(dossier_number), 0) AS m FROM dossiers`)
+      .get() as { m: number };
+    d.number = row.m + 1;
+    db.prepare(
+      `INSERT OR REPLACE INTO dossiers
+         (id, claim, created_at, body, subclaim_count, has_crux, dossier_number)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      d.id,
+      d.claim,
+      d.createdAt,
+      JSON.stringify(d),
+      d.subClaims.length,
+      d.crux ? 1 : 0,
+      d.number,
+    );
+  })();
 }
 
 export function getDossier(id: string): Dossier | null {
   const db = getDb();
-  const row = db.prepare(`SELECT body FROM dossiers WHERE id = ?`).get(id) as
-    | { body: string }
-    | undefined;
+  const row = db
+    .prepare(`SELECT body, dossier_number FROM dossiers WHERE id = ?`)
+    .get(id) as { body: string; dossier_number: number | null } | undefined;
   if (!row) return null;
   try {
-    return JSON.parse(row.body) as Dossier;
+    const parsed = JSON.parse(row.body) as Dossier;
+    // Patch number from the column. Bodies written before migration v5 don't
+    // have it in the JSON; the column was backfilled at migration time.
+    if (row.dossier_number !== null) parsed.number = row.dossier_number;
+    return parsed;
   } catch {
     return null;
   }
@@ -206,7 +251,7 @@ export function listDossiers(opts: { limit?: number; cursor?: ListCursor | null 
   if (opts.cursor) {
     rows = db
       .prepare(
-        `SELECT id, claim, created_at AS createdAt FROM dossiers
+        `SELECT id, dossier_number AS number, claim, created_at AS createdAt FROM dossiers
          WHERE created_at < ? OR (created_at = ? AND id < ?)
          ORDER BY created_at DESC, id DESC
          LIMIT ?`,
@@ -215,7 +260,7 @@ export function listDossiers(opts: { limit?: number; cursor?: ListCursor | null 
   } else {
     rows = db
       .prepare(
-        `SELECT id, claim, created_at AS createdAt FROM dossiers
+        `SELECT id, dossier_number AS number, claim, created_at AS createdAt FROM dossiers
          ORDER BY created_at DESC, id DESC
          LIMIT ?`,
       )

@@ -167,9 +167,13 @@ function AppRoute() {
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   // Bumped on successful invite-code entry to force a re-render of the gate.
   const [inviteVersion, setInviteVersion] = useState(0);
+  // Seeds ClaimInput on mount. Set by the auto-mint handoff and by every
+  // submit, so the loading-state textarea always shows what's being verified.
+  const [seedClaim, setSeedClaim] = useState<string>("");
   const lastProgressRef = useRef<ProgressEvent | null>(null);
 
   async function handleSubmit(claim: string, context: string | undefined) {
+    setSeedClaim(claim);
     lastProgressRef.current = null;
     setPhase({ kind: "loading", progress: null });
     await streamDossier(
@@ -232,7 +236,7 @@ function AppRoute() {
       {usingByok && <ByokBadge />}
 
       {(phase.kind === "idle" || phase.kind === "error") && (
-        <ClaimInput onSubmit={handleSubmit} busy={false} />
+        <ClaimInput onSubmit={handleSubmit} busy={false} initialClaim={seedClaim} />
       )}
 
       {phase.kind === "error" && phase.error.kind !== "invite_required" && (
@@ -245,7 +249,7 @@ function AppRoute() {
 
       {phase.kind === "loading" && (
         <div className="mt-6 space-y-4">
-          <ClaimInput onSubmit={() => undefined} busy={true} />
+          <ClaimInput onSubmit={() => undefined} busy={true} initialClaim={seedClaim} />
           <ProgressIndicator current={phase.progress} />
         </div>
       )}
