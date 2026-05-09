@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Stone background — matches the app's bg-stone-50 -->
+  <rect width="1200" height="630" fill="#fafaf9"/>
+
+  <!-- Top brass accent rule -->
+  <rect x="80" y="80" width="1040" height="4" fill="#92400e"/>
+
+  <!-- Document-genre micro-label, top-right (mono, brass) -->
+  <text x="1120" y="118"
+        font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace"
+        font-size="14"
+        font-weight="500"
+        fill="#92400e"
+        letter-spacing="2"
+        text-anchor="end">CIVIC FACT-VERIFICATION · OPEN SOURCE</text>
+
+  <!-- Wordmark — IBM Plex Sans Condensed Bold, ink -->
+  <text x="80" y="240"
+        font-family="'IBM Plex Sans Condensed', 'Helvetica Neue Condensed', 'Arial Narrow', sans-serif"
+        font-weight="700"
+        font-size="148"
+        fill="#0c0a09"
+        letter-spacing="6">PROOFINESS</text>
+
+  <!-- Tagline — serif italic, secondary -->
+  <text x="80" y="300"
+        font-family="'IBM Plex Serif', Georgia, 'Times New Roman', serif"
+        font-style="italic"
+        font-size="38"
+        fill="#57534e">The Quest for Truth — with Receipts!</text>
+
+  <!-- Value-prop subtitle — serif, two lines -->
+  <text x="80" y="450"
+        font-family="'IBM Plex Serif', Georgia, 'Times New Roman', serif"
+        font-size="40"
+        fill="#1c1917">Paste a claim. Get the case file.</text>
+  <text x="80" y="500"
+        font-family="'IBM Plex Serif', Georgia, 'Times New Roman', serif"
+        font-size="40"
+        fill="#1c1917">Decide for yourself.</text>
+
+  <!-- Bottom rule -->
+  <rect x="80" y="555" width="1040" height="1" fill="#d6d3d1"/>
+
+  <!-- URL, mono, bottom-left -->
+  <text x="80" y="588"
+        font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace"
+        font-size="20"
+        font-weight="500"
+        fill="#57534e"
+        letter-spacing="1.5">PROOFINESS.ORG</text>
+</svg>
