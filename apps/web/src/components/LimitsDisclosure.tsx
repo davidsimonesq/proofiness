@@ -9,8 +9,8 @@
 // is unchanged.
 export function LimitsDisclosure() {
   return (
-    <details className="border border-stone-300 border-l-2 border-l-accent bg-stone-50">
-      <summary className="cursor-pointer px-4 py-2 font-display text-xs font-semibold uppercase tracking-widish text-accent hover:bg-stone-100">
+    <details className="border border-stone-300 bg-stone-50">
+      <summary className="cursor-pointer px-4 py-2 font-display text-xs font-semibold uppercase tracking-widish text-stone-700 hover:bg-stone-100 hover:text-ink">
         ⓘ &nbsp; What Proofiness can and can't do
       </summary>
       <div className="space-y-3 border-t border-stone-300 p-4 font-serif text-sm leading-relaxed text-stone-800">

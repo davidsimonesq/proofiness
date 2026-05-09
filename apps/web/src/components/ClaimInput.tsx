@@ -28,7 +28,7 @@ export function ClaimInput({ onSubmit, busy, initialClaim }: Props) {
   return (
     <form onSubmit={handleSubmit} className="border border-stone-300 bg-white">
       <div className="border-b border-stone-300 bg-stone-100 px-4 py-2">
-        <span className="pf-label-loud">Factual Claim To Test</span>
+        <span className="pf-label-loud text-lg text-accent">Factual Claim To Test</span>
       </div>
       <div className="p-4">
         <label className="block">
@@ -59,23 +59,20 @@ export function ClaimInput({ onSubmit, busy, initialClaim }: Props) {
           <button
             type="button"
             onClick={() => setShowContext(true)}
-            className="mt-3 font-mono text-xs uppercase tracking-widish text-stone-600 hover:text-ink"
+            className="mt-3 font-mono text-lg uppercase tracking-widish text-stone-600 hover:text-ink"
             disabled={busy}
           >
-            + Attach context
+            + Attach context <span className="text-xs">(optional)</span>
           </button>
         )}
 
-        <div className="mt-5 flex items-center justify-between gap-3">
-          <span className="font-mono text-[0.65rem] uppercase tracking-widest text-stone-500">
-            {busy ? "Pipeline running…" : "Ready"}
-          </span>
+        <div className="mt-5 flex items-center justify-end">
           <button
             type="submit"
             disabled={!canSubmit}
             className="border border-ink bg-ink px-5 py-2 font-display text-sm font-semibold uppercase tracking-widish text-stone-50 hover:bg-stone-800 disabled:cursor-not-allowed disabled:border-stone-400 disabled:bg-stone-400"
           >
-            {busy ? "Building…" : "Build dossier →"}
+            {busy ? "Creating…" : "Create a Dossier →"}
           </button>
         </div>
       </div>
