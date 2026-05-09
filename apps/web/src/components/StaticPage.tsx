@@ -96,15 +96,37 @@ function CounselNote({ children }: { children: ReactNode }) {
 function AboutContent() {
   return (
     <div className="space-y-4">
-      <Subhead>What it is</Subhead>
+      <Subhead>What the app is</Subhead>
       <Para>
-        Proofiness is an open-source civic fact-verification tool. You paste a claim — anything
+        Proofiness is an open-source civic fact-verification tool. Enter a factual claim — anything
         from a viral social-media post to a campaign ad to a sentence in a news article — and
-        Proofiness breaks it into atomic sub-claims, searches the web with deliberately varied
+        Proofiness will break it into atomic sub-claims, search the web with deliberately varied
         framings (a direct countermeasure to confirmation bias), traces citations upstream toward
         primary sources, builds the strongest case for and against each sub-claim, identifies
         what the answer actually hinges on, and returns a calibrated, plain-language assessment
         with the full case file behind it.
+      </Para>
+
+      <Subhead>Why "Proofiness"?</Subhead>
+      <Para>
+        The term was coined by Charles Seife, an NYU journalism professor and
+        mathematician, in his 2010 book{" "}
+        <a
+          href="https://en.wikipedia.org/wiki/Proofiness"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="italic text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
+        >
+          Proofiness: The Dark Arts of Mathematical Deception
+        </a>
+        . Seife defines it as <span className="italic">"the art of using bogus
+        mathematical arguments to prove something that you know in your heart is
+        true &mdash; even when it's not."</span>
+      </Para>
+      <Para>
+        This app is named for the
+        phenomenon it tries to push back against: confident-sounding assertions
+        that look like proof but aren't. Every Proofiness assessment includes a dossier showing exactly the proof it's based on.
       </Para>
 
       <Subhead>Why it exists</Subhead>

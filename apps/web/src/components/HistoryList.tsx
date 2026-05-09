@@ -69,7 +69,7 @@ export function HistoryList() {
   if (items.length === 0) {
     return (
       <p className="font-serif text-sm italic text-stone-600">
-        No saved dossiers yet. Submit a claim above to start the index.
+        No saved dossiers.
       </p>
     );
   }

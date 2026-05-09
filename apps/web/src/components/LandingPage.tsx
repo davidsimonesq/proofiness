@@ -95,7 +95,7 @@ export function LandingPage() {
 
       {/* Why it exists — short narrative */}
       <section className="space-y-6">
-        <SectionHead number="04" label="Why it exists" />
+        <SectionHead number="04" label="Why it matters" />
         <div className="border border-stone-300 bg-white p-6 sm:p-8">
           <div className="space-y-4 font-serif text-base leading-relaxed text-stone-800">
             <p>
@@ -109,10 +109,6 @@ export function LandingPage() {
               Proofiness tries to thread that needle. Each dossier opens with a calibrated
               assessment — not a binary verdict — backed by the actual sources, structured so
               you can see where the assessment is grounded and where it might be wrong.
-            </p>
-            <p className="border-l-2 border-accent bg-stone-50 px-4 py-3 italic">
-              The fast path is the 30-second answer. The deep path is the 5-minute case file
-              you use to argue with the assessment when you disagree. <span className="not-italic font-display font-bold uppercase tracking-widish text-accent">You judge.</span>
             </p>
           </div>
         </div>

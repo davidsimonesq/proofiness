@@ -6,7 +6,7 @@ import {
   maskKey,
   setUserKeys,
 } from "../lib/keys.js";
-import { clearInviteCode, getInviteCode } from "../lib/invites.js";
+import { getInviteCode } from "../lib/invites.js";
 import { SectionHeader } from "../App.js";
 
 // Settings page — currently just BYOK key management. The keys live in
@@ -36,11 +36,6 @@ export function SettingsPage() {
     } catch {
       /* ignore — copy not supported */
     }
-  }
-
-  function handleClearInvite() {
-    clearInviteCode();
-    setVersion((v) => v + 1);
   }
 
   function handleSubmit(e: FormEvent) {
@@ -84,27 +79,20 @@ export function SettingsPage() {
           {inviteCode ? (
             <>
               <p className="font-serif text-sm leading-relaxed text-stone-700">
-                Saved in this browser. Copy it if you want to use Proofiness from another
-                device — there's no other way for us to give it to you again.
+                Copy the Invite Code if you want to use Proofiness from another
+                device. There's no way for us to give it to you again.
               </p>
               <dl className="grid gap-x-6 gap-y-1 font-mono text-sm text-stone-700 sm:grid-cols-[max-content_1fr]">
                 <dt className="text-stone-500">Code</dt>
                 <dd className="select-all font-bold text-ink">{inviteCode}</dd>
               </dl>
-              <div className="flex flex-wrap gap-2 pt-1">
+              <div className="pt-1">
                 <button
                   type="button"
                   onClick={handleCopyInvite}
                   className="border border-stone-400 bg-white px-3 py-1.5 font-display text-xs font-semibold uppercase tracking-widish text-stone-700 hover:border-ink hover:text-ink"
                 >
                   {copied ? "Copied" : "Copy"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleClearInvite}
-                  className="border border-stone-400 bg-white px-3 py-1.5 font-display text-xs font-semibold uppercase tracking-widish text-stone-700 hover:border-oxblood hover:text-oxblood"
-                >
-                  Forget on this device
                 </button>
               </div>
             </>
@@ -122,81 +110,42 @@ export function SettingsPage() {
         </div>
       </div>
 
-      <SectionHeader number="K" label="Use Your Own API Keys" />
-
-      <div className="space-y-4 border border-stone-300 bg-white p-6 sm:p-8">
-        <p className="font-serif text-base leading-relaxed text-stone-800">
-          By default, Proofiness uses the embedded API keys and gates access by invite code with
-          a lifetime dossier cap. If you'd rather use your own Anthropic and Tavily keys —{" "}
-          <strong>unlimited dossiers, billed directly to your accounts</strong> — set them here.
-        </p>
-        <p className="font-serif text-sm italic leading-relaxed text-stone-700">
-          Your keys are stored only in this browser's localStorage. They are sent with each
-          dossier request as headers, used by the server for that single request, and never
-          stored on disk or in logs. Both keys must be set together. See{" "}
-          <a
-            href="#/privacy"
-            className="text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
-          >
-            Privacy
-          </a>{" "}
-          for details.
-        </p>
-      </div>
-
-      {/* Current state */}
-      <div className="border border-stone-400 bg-stone-50">
-        <div className="border-b border-stone-300 bg-stone-100 px-4 py-2">
-          <span className="pf-label-loud">Current state</span>
-        </div>
-        <div className="space-y-3 p-5">
-          {hasBoth ? (
-            <>
-              <p className="font-serif text-base leading-relaxed text-ink">
-                <span className="font-display font-bold uppercase tracking-widish text-accent">
-                  BYOK active.
-                </span>{" "}
-                Dossier requests will use your keys; cost gate is bypassed.
-              </p>
-              <dl className="grid gap-x-6 gap-y-1 font-mono text-xs text-stone-700 sm:grid-cols-[max-content_1fr]">
-                <dt className="text-stone-500">Anthropic key</dt>
-                <dd className="text-ink">{current.anthropic ? maskKey(current.anthropic) : "—"}</dd>
-                <dt className="mt-1 text-stone-500 sm:mt-0">Tavily key</dt>
-                <dd className="text-ink">{current.tavily ? maskKey(current.tavily) : "—"}</dd>
-              </dl>
-              <button
-                type="button"
-                onClick={handleClear}
-                className="mt-2 border border-stone-400 bg-white px-3 py-1.5 font-display text-xs font-semibold uppercase tracking-widish text-stone-700 hover:border-oxblood hover:text-oxblood"
-              >
-                Clear my keys
-              </button>
-            </>
-          ) : (
-            <p className="font-serif text-base leading-relaxed text-stone-700">
-              <span className="font-display font-bold uppercase tracking-widish text-stone-700">
-                Embedded mode.
-              </span>{" "}
-              Dossier requests use the server's built-in keys; cost gate (invite code +
-              daily cap) applies. Set your own keys below to switch.
-            </p>
+      <form onSubmit={handleSubmit} className="border border-stone-400 bg-white">
+        <div className="flex items-center justify-between gap-3 border-b border-stone-300 bg-stone-100 px-4 py-2">
+          <span className="pf-label-loud">API Keys</span>
+          {hasBoth && (
+            <span className="font-display text-xs font-bold uppercase tracking-widish text-accent">
+              BYOK active
+            </span>
           )}
         </div>
-      </div>
-
-      {/* Set keys form */}
-      <form onSubmit={handleSubmit} className="border border-stone-400 bg-white">
-        <div className="border-b border-stone-300 bg-stone-100 px-4 py-2">
-          <span className="pf-label-loud">Set / replace your keys</span>
-        </div>
         <div className="space-y-4 p-5">
+          <p className="font-serif text-base leading-relaxed text-stone-800">
+            Proofiness allows you to test a limited number of claims free of charge. To
+            continue testing beyond that, provide your own API keys for Anthropic (Claude AI)
+            and Tavily (a web-search service). Both keys are stored only in this browser,
+            sent per-request, and never written to the server &mdash; see{" "}
+            <a
+              href="#/privacy"
+              className="text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
+            >
+              Privacy
+            </a>{" "}
+            §5 for details.
+          </p>
+
           <label className="block">
             <span className="pf-label">Anthropic API Key</span>
+            {current.anthropic && (
+              <span className="ml-2 font-mono text-[0.7rem] uppercase tracking-widish text-accent">
+                currently set &middot; {maskKey(current.anthropic)}
+              </span>
+            )}
             <input
               type="password"
               value={anthropic}
               onChange={(e) => setAnthropic(e.target.value)}
-              placeholder="sk-ant-..."
+              placeholder={current.anthropic ? "Enter a new key to replace" : "sk-ant-..."}
               autoComplete="off"
               spellCheck={false}
               className="mt-2 block w-full border border-stone-300 bg-stone-50 px-3 py-2 font-mono text-sm tracking-wide text-ink placeholder:text-stone-400 focus:border-ink focus:bg-white focus:outline-none"
@@ -208,11 +157,16 @@ export function SettingsPage() {
 
           <label className="block">
             <span className="pf-label">Tavily API Key</span>
+            {current.tavily && (
+              <span className="ml-2 font-mono text-[0.7rem] uppercase tracking-widish text-accent">
+                currently set &middot; {maskKey(current.tavily)}
+              </span>
+            )}
             <input
               type="password"
               value={tavily}
               onChange={(e) => setTavily(e.target.value)}
-              placeholder="tvly-..."
+              placeholder={current.tavily ? "Enter a new key to replace" : "tvly-..."}
               autoComplete="off"
               spellCheck={false}
               className="mt-2 block w-full border border-stone-300 bg-stone-50 px-3 py-2 font-mono text-sm tracking-wide text-ink placeholder:text-stone-400 focus:border-ink focus:bg-white focus:outline-none"
@@ -223,15 +177,22 @@ export function SettingsPage() {
           </label>
 
           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            {savedAt ? (
-              <span className="font-mono text-[0.7rem] uppercase tracking-widish text-accent">
-                Saved at {savedAt}
-              </span>
-            ) : (
-              <span className="font-mono text-[0.7rem] uppercase tracking-widish text-stone-500">
-                Both fields required
-              </span>
-            )}
+            <div className="flex flex-wrap items-center gap-3">
+              {hasBoth && (
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="border border-stone-400 bg-white px-3 py-1.5 font-display text-xs font-semibold uppercase tracking-widish text-stone-700 hover:border-oxblood hover:text-oxblood"
+                >
+                  Clear keys
+                </button>
+              )}
+              {savedAt && (
+                <span className="font-mono text-[0.7rem] uppercase tracking-widish text-accent">
+                  Saved at {savedAt}
+                </span>
+              )}
+            </div>
             <button
               type="submit"
               disabled={!anthropic.trim() || !tavily.trim()}
@@ -240,14 +201,14 @@ export function SettingsPage() {
               Save keys
             </button>
           </div>
+
+          <p className="border-t border-stone-200 pt-3 font-serif text-xs italic leading-relaxed text-stone-600">
+            Cost reference: a typical cold dossier uses roughly $0.20–0.30 of Anthropic credit
+            and ~20 Tavily searches. Caches reduce this on warm runs. You can monitor your
+            spend directly at console.anthropic.com and tavily.com.
+          </p>
         </div>
       </form>
-
-      <p className="font-serif text-xs italic leading-relaxed text-stone-600">
-        Cost reference: a typical cold dossier uses roughly $0.20–0.30 of Anthropic credit and
-        ~20 Tavily searches. Caches reduce this on warm runs. You can monitor your spend
-        directly at console.anthropic.com and tavily.com.
-      </p>
     </article>
   );
 }

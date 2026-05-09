@@ -62,7 +62,7 @@ export function InviteCodeGate({ reason, onAccepted }: Props) {
   return (
     <form onSubmit={handleSubmit} className="border border-stone-400 bg-stone-50">
       <div className="border-b border-stone-300 bg-stone-100 px-4 py-2">
-        <span className="pf-label-loud">Invite Code Required</span>
+        <span className="pf-label-loud text-sm text-accent">Invite Code Required</span>
       </div>
       <div className="space-y-4 p-5">
         <p className="font-serif text-base leading-relaxed text-stone-800">
@@ -75,11 +75,11 @@ export function InviteCodeGate({ reason, onAccepted }: Props) {
           Don't have a code?{" "}
           <a
             href="#/request-invite"
-            className="font-mono text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
+            className="text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
           >
-            Submit your first claim →
-          </a>{" "}
-          If it's specific enough to fact-check, we'll issue you an invite code on the spot.
+            Submit your first claim
+          </a>
+          {" "}&mdash; if it's specific enough to fact-check, we'll issue you one on the spot.
         </p>
 
         <label className="block">
@@ -102,7 +102,7 @@ export function InviteCodeGate({ reason, onAccepted }: Props) {
         {rejectedMsg && (
           <p className="border-l-2 border-oxblood bg-stone-100 px-3 py-2 font-serif text-sm leading-relaxed text-stone-900">
             <span className="font-display font-bold uppercase tracking-widish text-oxblood">
-              Rejected
+              Largely contradicted
             </span>{" "}
             — {rejectedMsg}
           </p>
@@ -114,7 +114,7 @@ export function InviteCodeGate({ reason, onAccepted }: Props) {
             disabled={!code.trim() || isChecking}
             className="border border-ink bg-ink px-5 py-2 font-display text-sm font-semibold uppercase tracking-widish text-stone-50 hover:bg-stone-800 disabled:cursor-not-allowed disabled:border-stone-400 disabled:bg-stone-400"
           >
-            {isChecking ? "Checking…" : "Save and continue →"}
+            {isChecking ? "Checking…" : "Continue"}
           </button>
         </div>
       </div>

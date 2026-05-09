@@ -108,9 +108,7 @@ function Header({ route }: { route: Route }) {
         </a>
       </div>
       <p className="mt-4 max-w-prose font-serif text-[1.05rem] leading-relaxed text-stone-700">
-        Paste a claim. Proofiness decomposes it, traces the citations to their headwater,
-        steelmans both sides, and returns a calibrated, plain-language assessment with the
-        full case file behind it. <span className="italic">Read the answer in 30 seconds, dig in when you want to.</span>
+        Enter a factual claim you want to test. Proofiness will decompose it into sub-claims, trace citations to their headwater, steelman both sides, and return a carefully calibrated assessment supported by a full dossier.
       </p>
     </header>
   );
@@ -238,7 +236,7 @@ function AppRoute() {
 
       {(phase.kind === "idle" || phase.kind === "error") && (
         <div className="space-y-4">
-          <LimitsDisclosure />
+          {/* <LimitsDisclosure />  -- temporarily hidden; uncomment to restore */}
           <ClaimInput onSubmit={handleSubmit} busy={false} initialClaim={seedClaim} />
         </div>
       )}
@@ -297,16 +295,8 @@ function ErrorPanel({ error, lastProgress, onSuggestionClick }: ErrorPanelProps)
         <p className="pf-label-loud">Invite quota exhausted</p>
         <p className="mt-2 font-serif text-sm leading-relaxed text-stone-800">{error.reason}</p>
         <p className="mt-2 font-serif text-xs italic text-stone-600">
-          Each invite code is good for a fixed number of dossiers, total. Switch to your own
-          API keys for unlimited dossiers (you'll be billed directly by Anthropic and Tavily),
-          or email{" "}
-          <a
-            href="mailto:info@proofiness.org?subject=Proofiness%20invite%20quota"
-            className="font-mono text-stone-700 underline decoration-stone-400 underline-offset-2 hover:text-ink hover:decoration-ink"
-          >
-            info@proofiness.org
-          </a>{" "}
-          for a new code.
+          Each invite code allows for a fixed number of dossiers. Switch to your own
+          API keys for unlimited dossiers. You'll be billed directly by Anthropic and Tavily.
         </p>
         <a
           href="#/settings"
