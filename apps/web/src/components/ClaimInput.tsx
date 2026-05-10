@@ -28,7 +28,7 @@ export function ClaimInput({ onSubmit, busy, initialClaim }: Props) {
   return (
     <form onSubmit={handleSubmit} className="border border-stone-300 bg-white">
       <div className="border-b border-stone-300 bg-stone-100 px-4 py-2">
-        <span className="pf-label-loud text-lg text-accent">Factual Claim To Assess</span>
+        <span className="pf-label-loud text-lg text-accent">Factual Claim To Check</span>
       </div>
       <div className="p-4">
         <label className="block">
@@ -71,7 +71,7 @@ export function ClaimInput({ onSubmit, busy, initialClaim }: Props) {
             disabled={!canSubmit}
             className="border border-ink bg-ink px-5 py-2 font-display text-sm font-semibold uppercase tracking-widish text-stone-50 hover:bg-stone-800 disabled:cursor-not-allowed disabled:border-stone-400 disabled:bg-stone-400"
           >
-            {busy ? "Assessing claim…" : "Assess the Claim →"}
+            {busy ? "Checking claim…" : "Check the Claim →"}
           </button>
         </div>
       </div>

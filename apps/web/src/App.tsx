@@ -109,9 +109,18 @@ function Header({ route }: { route: Route }) {
         </a>
       </div>
       {route.kind === "landing" && (
-        <p className="mt-4 max-w-prose font-serif text-[1.05rem] leading-relaxed text-stone-700">
-          Enter a factual claim you want to assess. Proofiness will decompose it into multiple sub-claims, trace citations to their headwater, steelman both sides of the claim, and return a carefully calibrated assessment backed by a full dossier.
-        </p>
+        <>
+          <div className="mt-6 flex justify-center">
+            <img
+              src="/proofiness-logo.png"
+              alt="Proofiness mascot — an owl with a TRUTH shield, surrounded by labels for fake news, misinformation, propaganda, bias, deception, lies, and rumors."
+              className="block w-full max-w-xs sm:max-w-sm"
+            />
+          </div>
+          <p className="mt-6 max-w-prose font-serif text-[1.05rem] leading-relaxed text-stone-700">
+            Enter a factual claim you want to assess. Proofiness will decompose it into multiple sub-claims, trace citations to their headwater, steelman both sides of the claim, and return a carefully calibrated assessment backed by a full dossier.
+          </p>
+        </>
       )}
     </header>
   );

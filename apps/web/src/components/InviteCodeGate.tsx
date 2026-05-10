@@ -66,7 +66,7 @@ export function InviteCodeGate({ reason, onAccepted }: Props) {
       </div>
       <div className="space-y-4 p-5">
         <p className="font-serif text-base leading-relaxed text-stone-800">
-          Every factual claim you submit to Proofiness triggers multiple calls to AI and web-search providers that accrue charges. With an invite code, you'll be able to assess five claims free of charge. When you've used your allotment, you can obtain your own API keys from those providers and assess an unlimited number of claims, with the charges billed to you.{" "}
+          Every factual claim you submit to Proofiness triggers multiple calls to AI and web-search services that accrue charges. With an invite code, you'll be able to assess five claims free of charge. When you've used your allotment, you can obtain your own API keys from those service provider and assess an unlimited number of claims, with the charges billed directly to you.{" "}
           {reason && (
             <span className="font-serif italic text-stone-600">— {reason}</span>
           )}

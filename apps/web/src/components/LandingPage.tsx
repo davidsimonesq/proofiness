@@ -32,7 +32,7 @@ export function LandingPage() {
               Today's information environment is making objective truth harder and harder to discern and trust. Misinformation spreads faster and further than the corrections that follow it. AI tools that pronounce confident verdicts based on their training pollute the environment as much as they help it. There's proofiness, and then there's real proof.
             </p>
             <p>
-              This app tries to thread that needle. Its assessments of factual claims are nuanced and carefully calibrated, rather than binary verdicts. More important, they include full dossiers showing the deep research and rigorous analysis supporting the assessments.
+              This app tries to thread that needle. Its assessments of factual claims are nuanced and carefully calibrated, rather than binary verdicts like other fact-checking apps. More important, they include full dossiers showing the deep research and rigorous analysis supporting the assessments.
             </p>
             <p>
               We need and deserve a source of truth we can trust. May Proofiness propel us in that direction....
@@ -47,8 +47,8 @@ export function LandingPage() {
         <ol className="space-y-5">
           <Step
             n="01"
-            title="Enter a claim you want to assess"
-            body="Type or paste a factual claim you want to assess &mdash; from a viral social-media post to a campaign ad to a sentence in a news article. A sentence or two is best."
+            title="Enter an alleged fact you want to check"
+            body="Type or paste a factual claim you want to check &mdash; from a viral social-media post to a campaign ad to a sentence in a news article. A sentence or two is best."
           />
           <StepArrow />
           <Step
@@ -60,13 +60,13 @@ export function LandingPage() {
           <Step
             n="03"
             title="Receive and review the assessment"
-            body="Within a minute or so, the app produces an assessment that assigns one of six calibrated labels to the claim, shows a confidence level in its judgment, and provides a one- or two-sentence summary."
+            body="Within a minute or so, the app produces an assessment that assigns one of six calibrated labels to the claim, shows a confidence level in its judgment, and provides a brief summary."
           />
           <StepArrow />
           <Step
             n="04"
             title="If you need proof, check the receipts"
-            body="Every assessment shows its work. The deep-path dossier — sub-claims, sources with quality badges, steelman pairs, provenance chains — is always just one click away."
+            body="Every assessment shows its work. The deep-path dossier — sub-claims, sources with quality badges, steelman pairs, and provenance chains — is always just one click away."
           />
         </ol>
       </section>
@@ -81,11 +81,11 @@ export function LandingPage() {
           />
           <Feature
             title="Multi-framing search"
-            body="Three to four queries per sub-claim with deliberately varied framings — not just one Google. Built to fight SEO bubbles."
+            body="Three to four queries per sub-claim with deliberately varied framings — not just one Google. Designed to fight SEO bubbles."
           />
           <Feature
             title="Provenance tracing"
-            body="Walks citations upstream from secondary reporting toward the primary source the chain ends at. Many widely-repeated 'facts' trace back to one weak study."
+            body="Walks citations upstream from secondary reporting toward the primary source where the chain ends. Many widely repeated 'facts' trace back to one weak study."
           />
           <Feature
             title="Steelman both sides"
@@ -97,7 +97,7 @@ export function LandingPage() {
           />
           <Feature
             title="No accounts, no tracking"
-            body="Local SQLite database. No analytics. No cookies. Three named third parties (Anthropic, Tavily, source publishers); see Privacy."
+            body="Local SQLite database. No analytics or cookies. Three named third parties (Anthropic, Tavily, source publishers); see Privacy."
           />
         </div>
       </section>
@@ -114,7 +114,7 @@ export function LandingPage() {
       {/* Closing CTA — repeated */}
       <section className="space-y-4 border-t-2 border-ink pt-10">
         <p className="text-center font-display text-2xl font-bold uppercase tracking-widish text-ink sm:text-3xl">
-          Ready to assess a factual claim?
+          Ready to check a factual claim?
         </p>
         <PrimaryCTA />
       </section>
