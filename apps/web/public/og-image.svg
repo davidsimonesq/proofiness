@@ -5,15 +5,6 @@
   <!-- Top brass accent rule -->
   <rect x="80" y="80" width="1040" height="4" fill="#92400e"/>
 
-  <!-- Document-genre micro-label, top-right (mono, brass) -->
-  <text x="1120" y="118"
-        font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace"
-        font-size="14"
-        font-weight="500"
-        fill="#92400e"
-        letter-spacing="2"
-        text-anchor="end">CIVIC FACT-VERIFICATION · OPEN SOURCE</text>
-
   <!-- Wordmark — IBM Plex Sans Condensed Bold, ink -->
   <text x="80" y="240"
         font-family="'IBM Plex Sans Condensed', 'Helvetica Neue Condensed', 'Arial Narrow', sans-serif"
@@ -27,17 +18,23 @@
         font-family="'IBM Plex Serif', Georgia, 'Times New Roman', serif"
         font-style="italic"
         font-size="38"
-        fill="#57534e">The Quest for Truth — with Receipts!</text>
+        fill="#57534e">A Quest for Truth — with Receipts!</text>
 
-  <!-- Value-prop subtitle — serif, two lines -->
-  <text x="80" y="450"
-        font-family="'IBM Plex Serif', Georgia, 'Times New Roman', serif"
-        font-size="40"
-        fill="#1c1917">Paste a claim. Get the case file.</text>
-  <text x="80" y="500"
-        font-family="'IBM Plex Serif', Georgia, 'Times New Roman', serif"
-        font-size="40"
-        fill="#1c1917">Decide for yourself.</text>
+  <!-- Value-prop bullets — accent checkmark + serif prose, three items -->
+  <text x="80" y="400" font-family="'IBM Plex Serif', Georgia, serif"
+        font-size="34" font-weight="600" fill="#92400e">✓</text>
+  <text x="125" y="400" font-family="'IBM Plex Serif', Georgia, serif"
+        font-size="34" fill="#1c1917">Enter a factual claim to assess</text>
+
+  <text x="80" y="450" font-family="'IBM Plex Serif', Georgia, serif"
+        font-size="34" font-weight="600" fill="#92400e">✓</text>
+  <text x="125" y="450" font-family="'IBM Plex Serif', Georgia, serif"
+        font-size="34" fill="#1c1917">Get back a calibrated rating and dossier</text>
+
+  <text x="80" y="500" font-family="'IBM Plex Serif', Georgia, serif"
+        font-size="34" font-weight="600" fill="#92400e">✓</text>
+  <text x="125" y="500" font-family="'IBM Plex Serif', Georgia, serif"
+        font-size="34" fill="#1c1917">Check the receipts for proof</text>
 
   <!-- Bottom rule -->
   <rect x="80" y="555" width="1040" height="1" fill="#d6d3d1"/>
@@ -49,4 +46,13 @@
         font-weight="500"
         fill="#57534e"
         letter-spacing="1.5">PROOFINESS.ORG</text>
+
+  <!-- Document-genre micro-label, bottom-right (mono, brass) -->
+  <text x="1120" y="588"
+        font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace"
+        font-size="14"
+        font-weight="500"
+        fill="#92400e"
+        letter-spacing="2"
+        text-anchor="end">CIVIC FACT-VERIFICATION · OPEN SOURCE · FREE</text>
 </svg>
