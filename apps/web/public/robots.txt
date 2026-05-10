@@ -1,0 +1,5 @@
+# Proofiness is a public civic-tech tool. We want search engines + social
+# preview crawlers (Facebook, Twitter/X, LinkedIn, Slack, etc.) to fetch
+# everything freely.
+User-agent: *
+Allow: /

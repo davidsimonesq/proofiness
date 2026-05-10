@@ -1,0 +1,4 @@
+# Cloudflare Pages SPA fallback — every URL that doesn't match a real
+# file or directory falls through to index.html so the client-side router
+# can take over. Status 200 (not 301) so the URL stays as the user typed it.
+/*  /index.html  200
