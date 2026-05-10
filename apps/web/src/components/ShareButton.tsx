@@ -62,12 +62,14 @@ export function ShareButton({ dossierId }: Props) {
             </div>
             <div className="p-5">
               <p className="font-serif text-sm leading-relaxed text-stone-800">
-                You'll be sharing a link to the structured dossier — every sub-claim, every source,
-                every steelman. <span className="italic">Not a screenshot. Not a verdict.</span>
+                You'll be sharing a link to the calibrated assessment <em>and</em> the full
+                dossier behind it — every sub-claim, every source, every steelman.{" "}
+                <span className="italic">Not a screenshot. Not a final verdict.</span>
               </p>
               <p className="mt-3 font-serif text-sm leading-relaxed text-stone-800">
-                Proofiness dossiers don't conclude anything. The whole point is that the recipient reads
-                the case file and judges for themselves.
+                The assessment is a calibrated call from the available sources, not a final
+                pronouncement. The dossier exists so the recipient can check the receipts —
+                see what the assessment is grounded in, and push back when it isn't earned.
               </p>
 
               {linkIsLocalOnly && (
@@ -91,8 +93,8 @@ export function ShareButton({ dossierId }: Props) {
                   className="mt-0.5 h-4 w-4 accent-ink"
                 />
                 <span className="font-serif leading-relaxed">
-                  I've read this dossier and I'm sharing it as a starting point for inquiry, not as
-                  proof of a position.
+                  I've read this assessment and at least skimmed the dossier behind it. I'm
+                  sharing it as a starting point for inquiry, not as proof of a position.
                 </span>
               </label>
 

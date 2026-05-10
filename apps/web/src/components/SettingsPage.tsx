@@ -62,6 +62,7 @@ export function SettingsPage() {
     <article className="space-y-8" key={version}>
       <a
         href="#/"
+        data-print-hide
         className="inline-block font-mono text-xs uppercase tracking-widish text-stone-600 hover:text-ink"
       >
         ← Home

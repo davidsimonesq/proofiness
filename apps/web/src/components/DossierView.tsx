@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Dossier } from "@proofiness/shared-types";
 import { SubClaimCard } from "./SubClaimCard.js";
 import { CruxSummary } from "./CruxSummary.js";
@@ -26,6 +26,20 @@ export function DossierView({ dossier }: Props) {
   // The user clicks once to expand the case file (decomposition + assumptions
   // + unresolved questions). Stays in-page; no separate route.
   const [showFull, setShowFull] = useState(false);
+
+  // Print support: when the user invokes Cmd-P, expand the deep path so the
+  // full dossier prints, and force any <details> elements (LabelLegend,
+  // LimitsDisclosure) open. The print stylesheet handles the rest.
+  useEffect(() => {
+    function onBeforePrint() {
+      setShowFull(true);
+      document.querySelectorAll("details").forEach((d) => {
+        d.open = true;
+      });
+    }
+    window.addEventListener("beforeprint", onBeforePrint);
+    return () => window.removeEventListener("beforeprint", onBeforePrint);
+  }, []);
 
   return (
     <article className="space-y-10">

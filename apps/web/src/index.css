@@ -52,3 +52,59 @@ body {
     @apply border border-stone-300 bg-white;
   }
 }
+
+/* ─── Print stylesheet ────────────────────────────────────────────────────────
+   Cmd-P → "Save as PDF" gives users a clean, archival copy of an assessment
+   plus its dossier. Hides interactive chrome, forces collapsed sections open,
+   prints citation URLs alongside their link text. Designed primarily for the
+   dossier view; static pages also print acceptably. */
+@media print {
+  /* Pure white paper, ink text, no decorative background. */
+  body {
+    background: #ffffff !important;
+    color: #0c0a09 !important;
+  }
+
+  /* Conservative page margins (A4 / Letter portrait both work). */
+  @page {
+    margin: 1.5cm 2cm;
+  }
+
+  /* Strip nav and interactive controls — meaningless in print. */
+  footer,
+  button,
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  /* Force any <details> elements (LimitsDisclosure, LabelLegend, etc.) to
+     show their full content. Hide the summary affordance — there's no
+     "click to expand" in print. */
+  details > summary {
+    display: none !important;
+  }
+  details > *:not(summary) {
+    display: block !important;
+  }
+
+  /* Don't split sub-claim cards / list items across pages when avoidable. */
+  article > section,
+  li,
+  .pf-panel {
+    break-inside: avoid-page;
+  }
+
+  /* Print URLs alongside link text so the PDF preserves source citations.
+     Skip internal hash anchors (no value to a paper reader). */
+  a[href^="http"]::after {
+    content: " <" attr(href) ">";
+    font-size: 0.8em;
+    color: #57534e;
+    word-break: break-all;
+  }
+
+  /* Don't underline the URL annotation we just injected. */
+  a[href^="http"] {
+    text-decoration: none;
+  }
+}

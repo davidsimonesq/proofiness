@@ -90,6 +90,7 @@ function Header({ route }: { route: Route }) {
         <div className="mb-4 flex items-center justify-end">
           <a
             href={APP_HASH}
+            data-print-hide
             className="font-display text-xs font-semibold uppercase tracking-widish text-ink hover:text-accent"
           >
             Open the App →
@@ -386,6 +387,7 @@ function DossierRoute({ id }: { id: string }) {
           reach the landing page via the wordmark. */}
       <a
         href={APP_HASH}
+        data-print-hide
         className="mb-6 inline-block font-mono text-xs uppercase tracking-widish text-stone-600 hover:text-ink"
       >
         ← Home

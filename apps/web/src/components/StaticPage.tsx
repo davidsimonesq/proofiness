@@ -29,6 +29,7 @@ export function StaticPage({ slug }: Props) {
     <article className="space-y-8">
       <a
         href="#/"
+        data-print-hide
         className="inline-block font-mono text-xs uppercase tracking-widish text-stone-600 hover:text-ink"
       >
         ← Home
