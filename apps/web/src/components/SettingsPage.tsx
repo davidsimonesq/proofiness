@@ -64,7 +64,7 @@ export function SettingsPage() {
         href="#/"
         className="inline-block font-mono text-xs uppercase tracking-widish text-stone-600 hover:text-ink"
       >
-        ← Index
+        ← Home
       </a>
 
       <SectionHeader number="S" label="Settings" />
@@ -79,7 +79,7 @@ export function SettingsPage() {
           {inviteCode ? (
             <>
               <p className="font-serif text-sm leading-relaxed text-stone-700">
-                Copy the Invite Code if you want to use Proofiness from another
+                Copy the Invite Code if you want to use Proofiness on another
                 device. There's no way for us to give it to you again.
               </p>
               <dl className="grid gap-x-6 gap-y-1 font-mono text-sm text-stone-700 sm:grid-cols-[max-content_1fr]">
@@ -121,8 +121,8 @@ export function SettingsPage() {
         </div>
         <div className="space-y-4 p-5">
           <p className="font-serif text-base leading-relaxed text-stone-800">
-            Proofiness allows you to test a limited number of claims free of charge. To
-            continue testing beyond that, provide your own API keys for Anthropic (Claude AI)
+            Proofiness allows you to assess a limited number of claims free of charge. To
+            continue beyond that number, provide your own API keys for Anthropic (Claude AI)
             and Tavily (a web-search service). Both keys are stored only in this browser,
             sent per-request, and never written to the server &mdash; see{" "}
             <a
@@ -172,7 +172,7 @@ export function SettingsPage() {
               className="mt-2 block w-full border border-stone-300 bg-stone-50 px-3 py-2 font-mono text-sm tracking-wide text-ink placeholder:text-stone-400 focus:border-ink focus:bg-white focus:outline-none"
             />
             <span className="mt-1 block font-mono text-[0.7rem] uppercase tracking-widish text-stone-500">
-              Get one at tavily.com (free tier OK)
+              Get one at tavily.com
             </span>
           </label>
 
@@ -203,9 +203,9 @@ export function SettingsPage() {
           </div>
 
           <p className="border-t border-stone-200 pt-3 font-serif text-xs italic leading-relaxed text-stone-600">
-            Cost reference: a typical cold dossier uses roughly $0.20–0.30 of Anthropic credit
-            and ~20 Tavily searches. Caches reduce this on warm runs. You can monitor your
-            spend directly at console.anthropic.com and tavily.com.
+            Cost reference: a typical assessment uses roughly $0.20–0.30 of Anthropic credit
+            and ~20 Tavily searches (up to 1,000/month free). You can monitor your
+            usage and cost directly at console.anthropic.com and tavily.com.
           </p>
         </div>
       </form>

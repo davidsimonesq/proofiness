@@ -32,7 +32,7 @@ export function DossierView({ dossier }: Props) {
       {/* Document header — case-file masthead */}
       <header className="border border-stone-400 bg-white">
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-300 bg-stone-100 px-4 py-2">
-          <span className="pf-label-loud">Dossier · {fmtNumber(dossier.number)}</span>
+          <span className="pf-label-loud">Assessment · {fmtNumber(dossier.number)}</span>
           <div className="flex items-center gap-3">
             {dossier.canDelete && <DeleteDossierButton dossierId={dossier.id} />}
             <ShareButton dossierId={dossier.id} />
@@ -40,7 +40,7 @@ export function DossierView({ dossier }: Props) {
         </div>
         <div className="space-y-4 p-5">
           <div>
-            <p className="pf-label">Original claim</p>
+            <p className="pf-label">Factual claim</p>
             <p className="mt-2 font-serif text-base leading-relaxed text-ink">{dossier.claim}</p>
           </div>
           {dossier.context && (
@@ -79,11 +79,13 @@ export function DossierView({ dossier }: Props) {
           onClick={() => setShowFull(true)}
           className="w-full border border-ink bg-white px-4 py-3 font-display text-sm font-semibold uppercase tracking-widish text-ink hover:bg-stone-100"
         >
-          ↓ View full dossier · {dossier.subClaims.length} sub-claim
+          ↓ View full dossier: &nbsp;{dossier.subClaims.length} sub-claim
           {dossier.subClaims.length === 1 ? "" : "s"}, sources, steelman pairs, provenance
         </button>
       ) : (
         <>
+          <LabelLegend />
+
           <section>
             <SectionHeader
               number="03"
@@ -144,7 +146,7 @@ export function DossierView({ dossier }: Props) {
             onClick={() => setShowFull(false)}
             className="w-full border border-stone-400 bg-white px-4 py-2 font-display text-xs font-semibold uppercase tracking-widish text-stone-700 hover:border-ink hover:text-ink"
           >
-            ↑ Collapse case file
+            ↑ Collapse dossier
           </button>
         </>
       )}
@@ -154,9 +156,54 @@ export function DossierView({ dossier }: Props) {
 
 function Meta({ term, value }: { term: string; value: string }) {
   return (
-    <div>
+    <div className="text-center">
       <dt className="text-stone-500">{term}</dt>
       <dd className="text-ink">{value}</dd>
     </div>
+  );
+}
+
+// Reference key for the deep-path labels. Collapsed by default — first-time
+// readers expand it once, then it stays out of the way. Same <details>
+// pattern as LimitsDisclosure for visual continuity.
+function LabelLegend() {
+  return (
+    <details className="border border-stone-300 bg-stone-50">
+      <summary className="cursor-pointer px-4 py-2 font-display text-xs font-semibold uppercase tracking-widish text-accent hover:bg-stone-100">
+        ⓘ &nbsp; How to read the labels in this dossier
+      </summary>
+      <dl className="grid gap-x-6 gap-y-3 border-t border-stone-300 p-4 font-serif text-sm leading-relaxed text-stone-800 sm:grid-cols-[max-content_1fr]">
+        <dt className="font-mono text-xs uppercase tracking-widish text-stone-600">§NN·NN</dt>
+        <dd>
+          <strong>Sub-claim.</strong> The composite reads as <em>section·item</em> — e.g.{" "}
+          <span className="font-mono text-xs">§03·01</span> is the first sub-claim under
+          section 03 (Decomposition).
+        </dd>
+
+        <dt className="font-mono text-xs uppercase tracking-widish text-stone-600">S·NN</dt>
+        <dd>
+          <strong>Source.</strong> A retrieved article, paper, or page used as evidence
+          for the surrounding sub-claim.
+        </dd>
+
+        <dt className="font-mono text-xs uppercase tracking-widish text-stone-600">H·NN</dt>
+        <dd>
+          <strong>Hop in a provenance chain.</strong> A citation step from secondary
+          reporting toward a primary source.
+        </dd>
+
+        <dt className="font-mono text-xs uppercase tracking-widish text-stone-600">A·NN</dt>
+        <dd>
+          <strong>Embedded assumption.</strong> A claim the original input takes for
+          granted that the dossier did not investigate.
+        </dd>
+
+        <dt className="font-mono text-xs uppercase tracking-widish text-stone-600">Q·NN</dt>
+        <dd>
+          <strong>Unresolved question.</strong> Something the dossier flagged but
+          couldn't answer from the available sources.
+        </dd>
+      </dl>
+    </details>
   );
 }

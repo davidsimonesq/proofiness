@@ -23,39 +23,61 @@ export function LandingPage() {
         </p>
       </section>
 
+      {/* Why it matters — short narrative */}
+      <section className="space-y-6">
+        <SectionHead number="01" label="Why it matters" />
+        <div className="border border-stone-300 bg-white p-6 sm:p-8">
+          <div className="space-y-4 font-serif text-base leading-relaxed text-stone-800">
+            <p>
+              The information environment is increasingly hostile to objective truth.
+              Misinformation spreads faster than the corrections that follow it. Centralized
+              fact-checking has credibility problems with significant chunks of the population —
+              partly justified, partly not. AI tools that pronounce confident verdicts on
+              contested claims can pollute the environment as much as they help it.
+            </p>
+            <p>
+              Proofiness tries to thread that needle. Its assessments of factual claims are nuanced and carefully calibrated, rather than being binary verdicts. More important, they're backed by full dossiers showing the deep research and rigorous analysis that underlie the assessments.
+            </p>
+            <p>
+              We need and deserve a source of truth we can trust. May Proofiness propel us in that direction....
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* How It Works — 4 numbered steps with arrow flow */}
       <section className="space-y-6">
-        <SectionHead number="01" label="How it works" />
+        <SectionHead number="02" label="How it works" />
         <ol className="space-y-5">
           <Step
             n="01"
-            title="Paste a claim"
-            body="Anything from a viral social-media post to a campaign ad to a sentence in a news article. One sentence to a paragraph works."
+            title="Enter a claim you want to assess"
+            body="Type or paste a factual claim you want to assess &mdash; from a viral social-media post to a campaign ad to a sentence in a news article. A sentence or two is best."
           />
           <StepArrow />
           <Step
             n="02"
-            title="Proofiness builds the case file"
-            body="Decomposes the claim into atomic sub-claims. Searches the web with deliberately varied framings (a direct countermeasure to confirmation bias). Traces citations upstream toward primary sources. Builds the strongest case for and against each sub-claim."
+            title="Let Proofiness research and assess"
+            body="The app puts the claim through a 10-step pipeline that includes decomposing it into atomic sub-claims, searching the web with deliberately varied framings to counter confirmation bias, tracing citations upstream toward primary sources, and building the strongest case for and against each sub-claim."
           />
           <StepArrow />
           <Step
             n="03"
-            title="Read the assessment"
-            body="One of six calibrated labels (largely supported / largely contradicted / mixed / definitional / value-laden / insufficient evidence) plus a low/moderate/high confidence dial plus a one- or two-sentence synthesis. The 30-second answer."
+            title="Receive and review the assessment"
+            body="Within a minute or so, the app produces an assessment that assigns one of six calibrated labels to the claim, shows a confidence level in its judgment, and provides a one- or two-sentence summary."
           />
           <StepArrow />
           <Step
             n="04"
-            title="Disagree? Open the receipts"
-            body="Every claim links to its source. Every assessment shows its work. The deep-path case file — sub-claims, sources with quality badges, steelman pairs, provenance chains — is one click away."
+            title="If you need proof, check the receipts"
+            body="Every assessment shows its work. The deep-path dossier — sub-claims, sources with quality badges, steelman pairs, provenance chains — is always just one click away."
           />
         </ol>
       </section>
 
       {/* What's different — six-feature grid */}
       <section className="space-y-6">
-        <SectionHead number="02" label="What's different" />
+        <SectionHead number="03" label="What's different" />
         <div className="grid gap-4 sm:grid-cols-2">
           <Feature
             title="Calibrated, not binary"
@@ -86,38 +108,17 @@ export function LandingPage() {
 
       {/* Sample assessment — what an output actually looks like */}
       <section className="space-y-6">
-        <SectionHead number="03" label="What an assessment looks like" />
+        <SectionHead number="04" label="What an assessment looks like" />
         <SampleDossier />
         <p className="text-center font-mono text-[0.7rem] uppercase tracking-widish text-stone-500">
           Illustration · not an interactive dossier
         </p>
       </section>
 
-      {/* Why it exists — short narrative */}
-      <section className="space-y-6">
-        <SectionHead number="04" label="Why it matters" />
-        <div className="border border-stone-300 bg-white p-6 sm:p-8">
-          <div className="space-y-4 font-serif text-base leading-relaxed text-stone-800">
-            <p>
-              The information environment is increasingly hostile to objective truth.
-              Misinformation spreads faster than the corrections that follow it. Centralized
-              fact-checking has credibility problems with significant chunks of the population —
-              partly justified, partly not. AI tools that pronounce confident verdicts on
-              contested claims can pollute the environment as much as they help it.
-            </p>
-            <p>
-              Proofiness tries to thread that needle. Each dossier opens with a calibrated
-              assessment — not a binary verdict — backed by the actual sources, structured so
-              you can see where the assessment is grounded and where it might be wrong.
-            </p>
-          </div>
-        </div>
-      </section>
-
       {/* Closing CTA — repeated */}
       <section className="space-y-4 border-t-2 border-ink pt-10">
         <p className="text-center font-display text-2xl font-bold uppercase tracking-widish text-ink sm:text-3xl">
-          Ready to test a claim?
+          Ready to assess a factual claim?
         </p>
         <PrimaryCTA />
       </section>
@@ -133,7 +134,7 @@ function PrimaryCTA() {
         href={APP_HASH}
         className="inline-block border-2 border-ink bg-ink px-8 py-4 font-display text-base font-bold uppercase tracking-widish text-stone-50 shadow-[4px_4px_0_0_#92400e] transition-transform hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[2px_2px_0_0_#92400e] sm:text-lg"
       >
-        Open the App →
+        Open Proofiness →
       </a>
     </div>
   );

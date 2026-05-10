@@ -48,7 +48,7 @@ export function CruxSummary({ crux, subClaims }: Props) {
 
         <p className="border-t border-stone-300 pt-3 font-serif text-xs italic text-stone-600">
           This describes <span className="not-italic font-mono">where</span> the disagreement is &mdash;
-          not which side is right. You weigh the evidence below.
+          not which side is right. You can weigh the evidence yourself in the full dossier.
         </p>
       </div>
     </section>

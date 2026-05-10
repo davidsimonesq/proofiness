@@ -69,7 +69,7 @@ export function HistoryList() {
   if (items.length === 0) {
     return (
       <p className="font-serif text-sm italic text-stone-600">
-        No saved dossiers.
+        No saved assessments.
       </p>
     );
   }
@@ -127,7 +127,7 @@ export function HistoryList() {
                           setRowError(null);
                         }}
                         className="font-mono text-[0.7rem] uppercase tracking-widish text-stone-400 hover:text-oxblood"
-                        aria-label={`Delete dossier ${item.number}`}
+                        aria-label={`Delete assessment ${item.number}`}
                       >
                         Delete
                       </button>

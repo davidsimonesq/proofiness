@@ -47,7 +47,7 @@ export function DeleteDossierButton({ dossierId }: Props) {
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Delete dossier"
+          aria-label="Delete assessment"
           className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4"
           onClick={close}
         >
@@ -57,16 +57,16 @@ export function DeleteDossierButton({ dossierId }: Props) {
           >
             <div className="border-b border-stone-300 bg-stone-100 px-4 py-2">
               <span className="font-display text-xs font-bold uppercase tracking-widest text-oxblood">
-                Delete this dossier?
+                Delete this assessment?
               </span>
             </div>
             <div className="space-y-3 p-5">
               <p className="font-serif text-sm leading-relaxed text-stone-800">
-                This will permanently remove the dossier from the database. There is
+                This will permanently remove the assessment from the database. There is
                 no undo.
               </p>
               <p className="font-serif text-sm italic leading-relaxed text-stone-700">
-                The link will stop working. Anyone you've shared it with will see "Dossier not found."
+                The link will stop working. Anyone you've shared it with will see "Assessment not found."
               </p>
 
               {phase === "error" && errorMsg && (

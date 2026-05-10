@@ -60,22 +60,17 @@ export function RequestInviteForm() {
         href="#/"
         className="inline-block font-mono text-xs uppercase tracking-widish text-stone-600 hover:text-ink"
       >
-        ← Index
+        ← Home
       </a>
 
-      <SectionHeader number="R" label="Request an Invite" />
+      <SectionHeader number="R" label="Request an Invite Code" />
 
       <div className="border border-stone-300 bg-white p-6 sm:p-8">
         <p className="font-serif text-base leading-relaxed text-stone-800">
-          Type a claim you'd like to verify. If it's specific enough to
-          fact-check, we'll issue you an invite code on the spot and start
-          your first dossier. If it's too vague, we'll suggest sharper
+          Enter a factual claim you'd like to assess. If it's specific enough to
+          fact-check, we'll issue an invite code and start
+          your first assessment. If it's too vague, we'll suggest sharper
           versions you can pick from.
-        </p>
-        <p className="mt-3 font-serif text-sm italic leading-relaxed text-stone-700">
-          We don't ask for your email or anything else. Codes live only in
-          your browser's localStorage — save the code somewhere if you want
-          to use it from another browser later.
         </p>
       </div>
 
@@ -97,7 +92,7 @@ export function RequestInviteForm() {
             />
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="font-mono text-[0.7rem] uppercase tracking-widish text-stone-500">
-                {isLoading ? "Reviewing your claim…" : "A specific, checkable claim works best"}
+                {isLoading ? "Reviewing the claim…" : "A specific, checkable claim works best"}
               </span>
               <button
                 type="submit"
@@ -140,35 +135,35 @@ function ResultPanel({ result, onUseNow, onRefine, onApplySuggestion }: ResultPa
           </span>
         </div>
         <div className="space-y-4 p-5">
-          <p className="font-serif text-base leading-relaxed text-stone-800">
-            Your code is saved in this browser. Save it somewhere if you
-            think you'll want to use Proofiness from another browser later
-            — we have no way to send it to you again.
-          </p>
           <dl className="grid gap-x-6 gap-y-1 font-mono text-sm text-stone-700 sm:grid-cols-[max-content_1fr]">
-            <dt className="text-stone-500">Your code</dt>
+            <dt className="text-stone-500">Your code:</dt>
             <dd className="select-all font-bold text-ink">{result.code}</dd>
           </dl>
-          <p className="font-serif text-sm italic leading-relaxed text-stone-700">
-            Ready to verify your claim? We'll start the dossier on the
-            normalized version below.
+          <p className="font-serif text-base leading-relaxed text-stone-800">
+            Your invite code is auto-saved in this browser. Save a copy if you
+            think you'll want to use Proofiness from another browser later
+            — we can't send you the code again.
           </p>
-          <blockquote className="border-l-2 border-stone-400 pl-3 font-serif text-sm leading-relaxed text-stone-800">
+          <p className="font-serif text-base italic leading-relaxed text-stone-700">
+            Ready to verify your claim? We'll start the assessment on the
+            claim as revised below.
+          </p>
+          <blockquote className="mt-7 border-l-4 border-accent pl-4 font-serif text-lg font-bold leading-relaxed text-ink">
             {result.normalizedClaim}
           </blockquote>
-          <div className="flex flex-wrap items-center gap-3 pt-1">
+          <div className="flex flex-wrap items-center gap-3 pt-6">
             <button
               type="button"
               onClick={onUseNow}
               className="border border-ink bg-ink px-5 py-2 font-display text-sm font-semibold uppercase tracking-widish text-stone-50 hover:bg-stone-800"
             >
-              Run the dossier →
+              Run the assessment →
             </button>
             <a
               href="#/app"
               className="font-mono text-xs uppercase tracking-widish text-stone-600 hover:text-ink"
             >
-              I'll start a different claim
+              Assess a different claim
             </a>
           </div>
         </div>

@@ -60,9 +60,8 @@ export function TopLineAssessment({ assessment }: Props) {
           {assessment.synthesis}
         </p>
         <p className="border-t border-stone-300 pt-3 font-serif text-xs italic leading-relaxed text-stone-600">
-          This is a calibrated call from the available sources, not a final verdict.
-          The full case file (sub-claims, sources, steelman pairs, provenance chains)
-          is below — open it any time the assessment doesn't feel grounded.
+          This is a calibrated call from the available sources &mdash; not a final verdict.
+          You can weigh the evidence yourself in the full dossier.
         </p>
       </div>
     </section>

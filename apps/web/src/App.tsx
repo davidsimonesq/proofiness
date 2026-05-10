@@ -103,13 +103,15 @@ function Header({ route }: { route: Route }) {
             Proofiness
           </h1>
           <p className="mt-1 font-serif text-lg italic text-stone-600">
-            The Quest for Truth — with Receipts!
+            A Quest for Truth — with Receipts!
           </p>
         </a>
       </div>
-      <p className="mt-4 max-w-prose font-serif text-[1.05rem] leading-relaxed text-stone-700">
-        Enter a factual claim you want to test. Proofiness will decompose it into sub-claims, trace citations to their headwater, steelman both sides, and return a carefully calibrated assessment supported by a full dossier.
-      </p>
+      {route.kind === "landing" && (
+        <p className="mt-4 max-w-prose font-serif text-[1.05rem] leading-relaxed text-stone-700">
+          Enter a factual claim you want to assess. Proofiness will decompose it into multiple sub-claims, trace citations to their headwater, steelman both sides of the claim, and return a carefully calibrated assessment backed by a full dossier.
+        </p>
+      )}
     </header>
   );
 }
@@ -257,7 +259,7 @@ function AppRoute() {
       )}
 
       <section className="mt-12">
-        <SectionHeader label="Recent Dossiers" />
+        <SectionHeader label="Recent Assessments" />
         <HistoryList />
       </section>
     </>
@@ -295,8 +297,8 @@ function ErrorPanel({ error, lastProgress, onSuggestionClick }: ErrorPanelProps)
         <p className="pf-label-loud">Invite quota exhausted</p>
         <p className="mt-2 font-serif text-sm leading-relaxed text-stone-800">{error.reason}</p>
         <p className="mt-2 font-serif text-xs italic text-stone-600">
-          Each invite code allows for a fixed number of dossiers. Switch to your own
-          API keys for unlimited dossiers. You'll be billed directly by Anthropic and Tavily.
+          Each invite code allows for a limited number of assessments. Switch to your own
+          API keys for unlimited assessments. You'll be billed directly by Anthropic and Tavily.
         </p>
         <a
           href="#/settings"
@@ -378,23 +380,23 @@ function DossierRoute({ id }: { id: string }) {
 
   return (
     <>
-      {/* Back link goes to the app, not the landing page — coming back from a
-          dossier almost always means "submit another claim", not "re-read the
+      {/* Back link goes to the app, not the landing page — coming back from an
+          assessment almost always means "submit another claim", not "re-read the
           marketing copy". Visitors arriving via shared permalinks can still
           reach the landing page via the wordmark. */}
       <a
         href={APP_HASH}
         className="mb-6 inline-block font-mono text-xs uppercase tracking-widish text-stone-600 hover:text-ink"
       >
-        ← Index
+        ← Home
       </a>
       {state.kind === "loading" && (
-        <p className="font-mono text-sm text-stone-600">Loading dossier…</p>
+        <p className="font-mono text-sm text-stone-600">Loading assessment…</p>
       )}
       {state.kind === "error" && (
         <div className="border border-oxblood bg-stone-100 p-4">
           <p className="font-display text-xs font-bold uppercase tracking-widest text-oxblood">
-            Couldn't load dossier
+            Couldn't load assessment
           </p>
           <p className="mt-2 font-sans text-sm text-stone-900">{state.message}</p>
         </div>

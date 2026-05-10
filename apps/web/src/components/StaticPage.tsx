@@ -10,7 +10,7 @@ const TITLES: Record<StaticPageSlug, string> = {
   about: "About Proofiness",
   privacy: "Privacy Policy",
   terms: "Terms of Use",
-  help: "How to Read a Dossier",
+  help: "How To Read Your Results",
 };
 
 const NUMBERS: Record<StaticPageSlug, string> = {
@@ -31,7 +31,7 @@ export function StaticPage({ slug }: Props) {
         href="#/"
         className="inline-block font-mono text-xs uppercase tracking-widish text-stone-600 hover:text-ink"
       >
-        ← Index
+        ← Home
       </a>
 
       <SectionHeader number={NUMBERS[slug]} label={TITLES[slug]} />
@@ -101,10 +101,10 @@ function AboutContent() {
         Proofiness is an open-source civic fact-verification tool. Enter a factual claim — anything
         from a viral social-media post to a campaign ad to a sentence in a news article — and
         Proofiness will break it into atomic sub-claims, search the web with deliberately varied
-        framings (a direct countermeasure to confirmation bias), traces citations upstream toward
-        primary sources, builds the strongest case for and against each sub-claim, identifies
-        what the answer actually hinges on, and returns a calibrated, plain-language assessment
-        with the full case file behind it.
+        framings (a direct countermeasure to confirmation bias), trace citations upstream toward
+        primary sources, build the strongest case for and against each sub-claim, identify
+        what the answer actually hinges on, and return a calibrated, plain-language assessment
+        with a full dossier behind it.
       </Para>
 
       <Subhead>Why "Proofiness"?</Subhead>
@@ -124,9 +124,7 @@ function AboutContent() {
         true &mdash; even when it's not."</span>
       </Para>
       <Para>
-        This app is named for the
-        phenomenon it tries to push back against: confident-sounding assertions
-        that look like proof but aren't. Every Proofiness assessment includes a dossier showing exactly the proof it's based on.
+        This app is named for the phenomenon it tries to push back against: confident-sounding assertions that look like proof but aren't. Every Proofiness assessment includes a dossier showing exactly the proof it's based on.
       </Para>
 
       <Subhead>Why it exists</Subhead>
@@ -138,15 +136,11 @@ function AboutContent() {
         environment as much as they help it.
       </Para>
       <Para>
-        Proofiness tries to thread that needle. Each dossier opens with a calibrated assessment
-        — not a binary verdict — backed by the actual sources, structured so you can see where
-        the assessment is grounded and where it might be wrong. The fast path is the 30-second
-        answer. The deep path is the 5-minute case file you can use to argue with the assessment
-        when you disagree.
+        Proofiness tries to thread that needle. Its calibrated assessment is not a binary verdict; it's backed by the actual sources, structured so you can see where the assessment is grounded and where it might be wrong. The fast path is the 30-second answer. The deep path is the 5-minute case file you can use to argue with the assessment if you disagree.
       </Para>
 
       <Subhead>How an assessment is built</Subhead>
-      <Para>Each dossier runs through a 10-step pipeline:</Para>
+      <Para>Each assessment runs through a 10-step pipeline:</Para>
       <Bullets
         items={[
           <>Normalize the claim (refuse vague inputs with refinement suggestions).</>,
@@ -229,7 +223,7 @@ function PrivacyContent() {
         Proofiness does not run analytics. It does not set tracking cookies. It does not create
         user accounts. The data you submit (the claim text, optional context) is processed locally
         and sent to a small number of named third parties (Anthropic, Tavily, source publishers)
-        as part of producing a dossier. Your dossier history is stored only on the machine
+        as part of producing an assessment. Your assessment history is stored only on the machine
         running the API.
       </Para>
 
@@ -245,11 +239,11 @@ function PrivacyContent() {
             claim, what surrounded it).
           </>,
           <>
-            <strong>The full dossier output</strong> — sub-claims, sources, steelman pairs,
-            contestation labels, crux summary, and top-line assessment.
+            <strong>The full assessment + dossier output</strong> — sub-claims, sources, steelman
+            pairs, contestation labels, crux summary, and the top-line assessment itself.
           </>,
           <>
-            <strong>A unique dossier ID</strong> (UUID) and a timestamp.
+            <strong>A unique assessment ID</strong> (UUID) and a timestamp.
           </>,
         ]}
       />
@@ -260,12 +254,12 @@ function PrivacyContent() {
 
       <Subhead>3. Where data is stored</Subhead>
       <Para>
-        Dossiers are stored in a local SQLite database file on the machine running the Proofiness
+        Assessments are stored in a local SQLite database file on the machine running the Proofiness
         API server. By default this is <Code>apps/api/data/proofiness.db</Code>. On the hosted
         instance at proofiness.org, the database lives on a Railway volume at{" "}
         <Code>/data/proofiness.db</Code> and is included in that platform's standard volume
         snapshots. The database is not transmitted off the host machine and is not synced to any
-        cloud service by Proofiness itself. If the host machine is backed up, the dossiers will
+        cloud service by Proofiness itself. If the host machine is backed up, the assessments will
         be backed up with it.
       </Para>
       <Para>
@@ -276,7 +270,7 @@ function PrivacyContent() {
 
       <Subhead>4. Third-party processors</Subhead>
       <Para>
-        Every dossier triggers calls to the following third parties. Each has its own privacy
+        Every assessment triggers calls to the following third parties. Each has its own privacy
         practices governing what it does with the data we send.
       </Para>
       <Bullets
@@ -321,7 +315,7 @@ function PrivacyContent() {
             <strong>never</strong> sent to a Proofiness database or written to disk.
           </>,
           <>
-            They are sent with each dossier request as HTTP headers
+            They are sent with each assessment request as HTTP headers
             (<Code>x-anthropic-key</Code> and <Code>x-tavily-key</Code>) over TLS.
           </>,
           <>
@@ -350,8 +344,8 @@ function PrivacyContent() {
 
       <Subhead>7. Sharing</Subhead>
       <Para>
-        The "Share" button on a dossier copies a URL to your clipboard. The URL points at the
-        dossier's permalink on the Proofiness instance you are using. No tracking parameters are
+        The "Share" button on an assessment copies a URL to your clipboard. The URL points at the
+        assessment's permalink on the Proofiness instance you are using. No tracking parameters are
         attached. No analytics fire when a recipient opens the link. Whether the recipient can
         reach the URL depends on whether your instance is publicly accessible.
       </Para>
@@ -362,9 +356,9 @@ function PrivacyContent() {
         all the data: the SQLite database file is on your machine, and you can inspect, export,
         or delete it at will. To delete your entire history, delete the database file
         (<Code>apps/api/data/proofiness.db</Code>) and restart the API server, which will create
-        a fresh empty database. To delete a single dossier, use the "Delete" control on the
-        dossier view (next to "Share") or the per-row delete in the history list. Both are
-        gated by the invite code that created the dossier, so the browser holding that code is
+        a fresh empty database. To delete a single assessment, use the "Delete" control on the
+        assessment view (next to "Share") or the per-row delete in the history list. Both are
+        gated by the invite code that created the assessment, so the browser holding that code is
         the only one that can authorize the removal.
       </Para>
 
@@ -390,8 +384,8 @@ function PrivacyContent() {
         items={[
           <>
             <strong>IP addresses are seen transiently</strong> by the per-IP rate limiter (5
-            dossier requests per minute) and by the platform's standard request logs. The
-            application itself does not write IP addresses to the dossier database. Platform
+            assessment requests per minute) and by the platform's standard request logs. The
+            application itself does not write IP addresses to the assessment database. Platform
             logs are retained per Railway's defaults (typically 7–30 days) and are not used
             for analytics.
           </>,
@@ -402,18 +396,18 @@ function PrivacyContent() {
             requesting one.
           </>,
           <>
-            <strong>Dossiers persist server-side</strong> in the database at{" "}
-            <Code>/data/proofiness.db</Code> on a Railway volume. Anyone who knows a dossier's
-            UUID URL can read it; treat dossier URLs as semi-public. Dossiers you created via
-            an invite code can be deleted from the dossier view or the history list — the
+            <strong>Assessments persist server-side</strong> in the database at{" "}
+            <Code>/data/proofiness.db</Code> on a Railway volume. Anyone who knows an assessment's
+            UUID URL can read it; treat assessment URLs as semi-public. Assessments you created via
+            an invite code can be deleted from the assessment view or the history list — the
             delete is gated by that same code, so only your browser can authorize it. For
             bulk deletion across an invite code (e.g., remove everything I ever generated),
             email <ContactEmail />.
           </>,
           <>
             <strong>BYOK requests skip the invite-code quota entirely</strong> (no usage row
-            is written). The resulting dossier is saved to the server-side database the same
-            way as any other dossier; because no invite code is on file, the web client can't
+            is written). The resulting assessment is saved to the server-side database the same
+            way as any other assessment; because no invite code is on file, the web client can't
             authorize a delete on it — email <ContactEmail /> for removal.
           </>,
         ]}
@@ -526,11 +520,11 @@ function TermsContent() {
       <Subhead>7. Intellectual property</Subhead>
       <Para>
         The Proofiness source code is open-source under the license declared in the repository's
-        <Code>LICENSE</Code> file. The claims you submit remain yours; the dossiers Proofiness
+        <Code>LICENSE</Code> file. The claims you submit remain yours; the assessments Proofiness
         produces from them are made available to you for your own use. Source content fetched
         from third-party publishers remains subject to those publishers' rights and licenses.
         Proofiness fetches and extracts text under fair-use principles for the purpose of
-        producing the dossiers.
+        producing the assessments.
       </Para>
 
       <Subhead>8. Third-party services</Subhead>
@@ -578,9 +572,9 @@ function HelpContent() {
     <div className="space-y-4">
       <Subhead>The fast path</Subhead>
       <Para>
-        Every dossier opens with a single calibrated assessment: a label (one of six), a
-        confidence dial (low / moderate / high), and a one- or two-sentence synthesis. Read
-        these &mdash; they are the 30-second answer.
+        Every assessment opens with a label (one of six), a confidence dial (low / moderate /
+        high), and a one- or two-sentence synthesis. Read these &mdash; they are the 30-second
+        answer.
       </Para>
 
       <Subhead>What the labels mean</Subhead>
@@ -670,8 +664,8 @@ function HelpContent() {
 
       <Subhead>Using your own API keys</Subhead>
       <Para>
-        Each invite code is capped at a fixed number of free dossiers. When you've used
-        your allotment, the app refuses further requests on that code. To create more dossiers, supply your own Anthropic and Tavily API keys in{" "}
+        Each invite code is capped at a fixed number of free assessments. When you've used
+        your allotment, the app refuses further requests on that code. To create more assessments, supply your own Anthropic and Tavily API keys in{" "}
         <a
           href="#/settings"
           className="text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
@@ -679,7 +673,7 @@ function HelpContent() {
           Settings
         </a>
         . Both keys are required together. Once set,
-        you can create an unlimited number of dossiers, and Anthropic and Tavily will bill you directly. If you don't already have keys, sign up at console.anthropic.com and
+        you can assess an unlimited number of claims, and Anthropic and Tavily will bill you directly. If you don't already have keys, sign up at console.anthropic.com and
         tavily.com. Keys live only in your browser's local storage, are sent per-request, and are never stored on the server. See{" "}
         <a
           href="#/privacy"
@@ -690,12 +684,12 @@ function HelpContent() {
         §5 for the details.
       </Para>
 
-      <Subhead>Deleting a dossier</Subhead>
+      <Subhead>Deleting an assessment</Subhead>
       <Para>
-        From the dossier view, click "Delete" next to "Share" — or use the per-row delete in
+        From the assessment view, click "Delete" next to "Share" — or use the per-row delete in
         the history list. A confirm step protects against accidents; once deleted, the
         permalink stops working and there's no undo. Delete is gated by the invite code that
-        created the dossier, so your browser only sees the delete controls for dossiers it
+        created the assessment, so your browser only sees the delete controls for assessments it
         created. If you've switched browsers or cleared local storage, re-enter your code in{" "}
         <a
           href="#/settings"
@@ -703,16 +697,16 @@ function HelpContent() {
         >
           Settings
         </a>{" "}
-        first. Dossiers created via your own API keys (BYOK) can't be deleted from the
-        web — email the operator if you need them removed.
+        first. Assessments created via your own API keys (BYOK) can't be deleted from the
+        web.
       </Para>
 
       <Subhead>Common questions</Subhead>
 
       <Para>
-        <strong>How long does an assessment take?</strong> A new dossier takes 1 to 3 minutes.
+        <strong>How long does an assessment take?</strong> A new assessment takes 1 to 3 minutes.
         The app is making real searches, fetching real sources, and running the LLM 10
-        times. Subsequent dossiers on overlapping topics are faster.
+        times. Subsequent assessments on overlapping topics are faster.
       </Para>
 
       <Para>
@@ -742,10 +736,10 @@ function HelpContent() {
 
       <Para>
         <strong>Can I share an assessment without sharing the case file?</strong> The Share
-        button copies a URL to the dossier's permalink, which includes both the assessment and
-        the case file. There's intentional friction (an acknowledgment checkbox) to discourage
-        screenshot-as-verdict sharing, since stripping the case file from the assessment is
-        throwing away the receipts.
+        button copies a URL to the assessment's permalink, which includes both the assessment and
+        the dossier. There's intentional friction (an acknowledgment checkbox) to discourage
+        screenshot-as-verdict sharing, since stripping the case file from the assessment throws
+        away the receipts.
       </Para>
 
       <Subhead>Reporting issues</Subhead>

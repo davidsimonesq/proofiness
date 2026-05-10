@@ -49,7 +49,7 @@ export function ShareButton({ dossierId }: Props) {
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Share dossier"
+          aria-label="Share assessment"
           className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 p-4"
           onClick={close}
         >
@@ -58,7 +58,7 @@ export function ShareButton({ dossierId }: Props) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="border-b border-stone-300 bg-stone-100 px-4 py-2">
-              <span className="pf-label-loud">Share dossier — acknowledgment required</span>
+              <span className="pf-label-loud">Share assessment — acknowledgment required</span>
             </div>
             <div className="p-5">
               <p className="font-serif text-sm leading-relaxed text-stone-800">

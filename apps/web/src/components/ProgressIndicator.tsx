@@ -107,7 +107,7 @@ export function ProgressIndicator({ current }: Props) {
         </ol>
 
         <p className="mt-4 border-t border-stone-300 pt-3 font-serif text-xs italic leading-relaxed text-stone-600">
-          Cold dossiers take 60–180 seconds. The pipeline is making real searches and LLM calls.
+          Assessments typically take 1-3 minutes while the 10-step pipeline is making numerous web-search and LLM calls.
         </p>
       </div>
     </div>

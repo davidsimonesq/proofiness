@@ -43,7 +43,7 @@ export function LimitsDisclosure() {
           <span className="font-display font-bold uppercase tracking-widish text-accent">
             What this isn't:
           </span>{" "}
-          a fact-checker badge. The assessment is a calibrated call from the available sources &mdash; not a final pronouncement. The confidence dial and the deep-path case file are there so you can see when to trust it and when to push back.
+          a fact-checker badge. The assessment is a calibrated call from the available sources &mdash; not a final pronouncement. The confidence dial and the deep-path dossier are there so you can decide for yourself what to trust and what to push back on.
         </p>
       </div>
     </details>

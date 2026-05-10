@@ -216,7 +216,7 @@ export async function getDossier(id: string): Promise<Dossier> {
     headers: authHeaders(),
   });
   if (!res.ok) {
-    if (res.status === 404) throw new Error("Dossier not found");
+    if (res.status === 404) throw new Error("Assessment not found");
     throw new Error(`Failed to load dossier (${res.status})`);
   }
   const body = (await res.json()) as CreateDossierResponse;
