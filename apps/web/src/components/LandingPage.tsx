@@ -29,14 +29,10 @@ export function LandingPage() {
         <div className="border border-stone-300 bg-white p-6 sm:p-8">
           <div className="space-y-4 font-serif text-base leading-relaxed text-stone-800">
             <p>
-              The information environment is increasingly hostile to objective truth.
-              Misinformation spreads faster than the corrections that follow it. Centralized
-              fact-checking has credibility problems with significant chunks of the population —
-              partly justified, partly not. AI tools that pronounce confident verdicts on
-              contested claims can pollute the environment as much as they help it.
+              Today's information environment is making objective truth harder and harder to discern and trust. Misinformation spreads faster and further than the corrections that follow it. AI tools that pronounce confident verdicts based on their training pollute the environment as much as they help it. There's proofiness, and then there's real proof.
             </p>
             <p>
-              Proofiness tries to thread that needle. Its assessments of factual claims are nuanced and carefully calibrated, rather than being binary verdicts. More important, they're backed by full dossiers showing the deep research and rigorous analysis that underlie the assessments.
+              This app tries to thread that needle. Its assessments of factual claims are nuanced and carefully calibrated, rather than binary verdicts. More important, they include full dossiers showing the deep research and rigorous analysis supporting the assessments.
             </p>
             <p>
               We need and deserve a source of truth we can trust. May Proofiness propel us in that direction....

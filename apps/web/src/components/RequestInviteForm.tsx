@@ -78,7 +78,7 @@ export function RequestInviteForm() {
       {showForm && (
         <form onSubmit={handleSubmit} className="border border-stone-400 bg-white">
           <div className="border-b border-stone-300 bg-stone-100 px-4 py-2">
-            <span className="pf-label-loud">Your first claim</span>
+            <span className="pf-label-loud text-lg text-accent">Your first claim</span>
           </div>
           <div className="space-y-4 p-5">
             <textarea
@@ -89,7 +89,7 @@ export function RequestInviteForm() {
               autoFocus
               spellCheck
               disabled={isLoading}
-              className="block w-full border border-stone-300 bg-stone-50 px-3 py-2 font-serif text-base leading-relaxed text-ink placeholder:font-serif placeholder:italic placeholder:text-stone-400 focus:border-ink focus:bg-white focus:outline-none disabled:opacity-60"
+              className="block w-full border-2 border-accent bg-stone-50 px-3 py-2 font-sans text-sm text-ink placeholder:text-stone-400 focus:border-ink focus:bg-white focus:outline-none disabled:bg-stone-200 disabled:text-stone-500"
             />
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="font-mono text-[0.7rem] uppercase tracking-widish text-stone-500">
