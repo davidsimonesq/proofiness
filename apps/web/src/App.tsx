@@ -118,7 +118,7 @@ function Header({ route }: { route: Route }) {
             />
           </div>
           <p className="mt-6 max-w-prose font-serif text-[1.05rem] leading-relaxed text-stone-700">
-            Enter a factual claim you want to assess. Proofiness will decompose it into multiple sub-claims, trace citations to their headwater, steelman both sides of the claim, and return a carefully calibrated assessment backed by a full dossier.
+            Enter a factual claim you want to assess. Proofiness will decompose it into multiple sub-claims, trace citations to their headwater, steelman both sides of the claim, and return a calibrated assessment backed by a full dossier.
           </p>
         </>
       )}
