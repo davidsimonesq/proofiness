@@ -1,19 +1,35 @@
-# Cloudflare Pages cache-control directives. Mirrors what the .htaccess
-# was doing on SiteGround: cache hashed asset bundles for a year, never
-# cache index.html (so new deploys pick up immediately).
+# Cloudflare Pages cache-control directives.
 
+# Vite-bundled hashed assets — filenames change on every build (e.g.
+# index-a3f9c2e1.js), so it's safe to cache forever as immutable.
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
-/*.png
-  Cache-Control: public, max-age=31536000, immutable
+# Top-level brand assets keep stable filenames but their content updates
+# between deploys (logo, OG image, favicon). Cache for an hour so updates
+# propagate quickly without hammering the origin.
+/og-image.png
+  Cache-Control: public, max-age=3600
 
-/*.svg
-  Cache-Control: public, max-age=31536000, immutable
+/og-image.svg
+  Cache-Control: public, max-age=3600
 
-/*.woff2
-  Cache-Control: public, max-age=31536000, immutable
+/proofiness-logo.png
+  Cache-Control: public, max-age=3600
 
+/icon.svg
+  Cache-Control: public, max-age=3600
+
+# Web manifest can change between deploys (theme color, app name, icons).
+/manifest.json
+  Cache-Control: public, max-age=3600
+
+# Robots.txt — short cache so changes propagate.
+/robots.txt
+  Cache-Control: public, max-age=3600
+
+# Entry document — never cache. New deploys must appear immediately so the
+# new asset filenames it references are picked up.
 /index.html
   Cache-Control: no-cache, must-revalidate
 
