@@ -21,23 +21,23 @@
         font-family="'IBM Plex Serif', Georgia, 'Times New Roman', serif"
         font-style="italic"
         font-size="32"
-        fill="#57534e">A Quest for Truth — with Receipts!</text>
+        fill="#57534e">In Search of Truth — with Receipts</text>
 
   <!-- Value-prop bullets — accent checkmark + serif prose, three items -->
   <text x="80" y="340" font-family="'IBM Plex Serif', Georgia, serif"
-        font-size="26" font-weight="600" fill="#92400e">✓</text>
+        font-size="24" font-weight="600" fill="#92400e">✓</text>
   <text x="115" y="340" font-family="'IBM Plex Serif', Georgia, serif"
-        font-size="26" fill="#1c1917">Enter a factual claim to check</text>
+        font-size="24" fill="#1c1917">Enter a factual claim to check</text>
 
   <text x="80" y="385" font-family="'IBM Plex Serif', Georgia, serif"
-        font-size="26" font-weight="600" fill="#92400e">✓</text>
+        font-size="24" font-weight="600" fill="#92400e">✓</text>
   <text x="115" y="385" font-family="'IBM Plex Serif', Georgia, serif"
-        font-size="26" fill="#1c1917">Get back a calibrated rating and dossier</text>
+        font-size="24" fill="#1c1917">10-step pipeline decomposes and analyzes the claim</text>
 
   <text x="80" y="430" font-family="'IBM Plex Serif', Georgia, serif"
-        font-size="26" font-weight="600" fill="#92400e">✓</text>
+        font-size="24" font-weight="600" fill="#92400e">✓</text>
   <text x="115" y="430" font-family="'IBM Plex Serif', Georgia, serif"
-        font-size="26" fill="#1c1917">Check the &quot;receipts&quot; for detailed analysis</text>
+        font-size="24" fill="#1c1917">Get back a careful assessment and detailed dossier</text>
 
   <!-- ─── Right column: mascot ─────────────────────────────────────────── -->
   <!-- Native PNG is 800×624 (aspect 1.282). At 400 wide, height = 312.
@@ -51,20 +51,15 @@
   <!-- Bottom rule -->
   <rect x="80" y="555" width="1040" height="1" fill="#d6d3d1"/>
 
-  <!-- URL, mono, bottom-left -->
-  <text x="80" y="588"
+  <!-- Document-genre descriptors, centered. URL dropped — social platforms
+       already display the source domain alongside the preview, so duplicating
+       it here was wasted real estate. Enlarged from 14px to 20px so it's
+       legible at typical preview-card display sizes. -->
+  <text x="600" y="595"
         font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace"
         font-size="20"
         font-weight="500"
-        fill="#57534e"
-        letter-spacing="1.5">PROOFINESS.ORG</text>
-
-  <!-- Document-genre micro-label, bottom-right (mono, brass) -->
-  <text x="1120" y="588"
-        font-family="'IBM Plex Mono', 'SF Mono', Menlo, monospace"
-        font-size="14"
-        font-weight="500"
         fill="#92400e"
         letter-spacing="2"
-        text-anchor="end">CIVIC FACT-VERIFICATION · OPEN SOURCE · FREE</text>
+        text-anchor="middle">CIVIC FACT-VERIFICATION · OPEN SOURCE · FREE</text>
 </svg>

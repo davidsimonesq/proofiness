@@ -51,7 +51,7 @@ export default function App() {
     <main className="mx-auto max-w-3xl px-4 pb-16 pt-6 sm:px-6 sm:pt-10">
       <Header route={route} />
       {renderRoute(route)}
-      <Footer />
+      <Footer route={route} />
     </main>
   );
 }
@@ -104,7 +104,7 @@ function Header({ route }: { route: Route }) {
             Proofiness
           </h1>
           <p className="mt-1 font-serif text-lg italic text-stone-600">
-            A Quest for Truth — with Receipts!
+            In Search of Truth — with Receipts
           </p>
         </a>
       </div>
@@ -126,34 +126,44 @@ function Header({ route }: { route: Route }) {
   );
 }
 
-function Footer() {
+function Footer({ route }: { route: Route }) {
+  // GitHub ↗ is a "trust signal" link useful for first-time visitors
+  // (landing + static / about / privacy / terms / help). Once the user is
+  // inside the tool, it becomes clutter and contributes to footer wrap on
+  // mobile. The About page still links to the repo for anyone who wants it.
+  // When shown, it sits on its own centered line below the main nav — turns
+  // an accidental mobile wrap into an intentional layout that visually marks
+  // GitHub as a credibility footnote rather than another peer link.
+  const showGitHub = route.kind === "landing" || route.kind === "static";
   return (
     <footer className="mt-16">
       <div className="pf-rule mb-4" />
-      <nav
-        aria-label="Footer"
-        className="flex flex-wrap items-center gap-x-2 gap-y-1 font-display text-xs font-semibold uppercase tracking-widish text-stone-700"
-      >
-        <FooterLink slug="about">About</FooterLink>
-        <span className="text-stone-400" aria-hidden="true">·</span>
-        <FooterLink slug="privacy">Privacy</FooterLink>
-        <span className="text-stone-400" aria-hidden="true">·</span>
-        <FooterLink slug="terms">Terms</FooterLink>
-        <span className="text-stone-400" aria-hidden="true">·</span>
-        <FooterLink slug="help">Help</FooterLink>
-        <span className="text-stone-400" aria-hidden="true">·</span>
-        <a href="#/settings" className="hover:text-ink">
-          Settings
-        </a>
-        <span className="text-stone-400" aria-hidden="true">·</span>
-        <a
-          href="https://github.com/davidsimonesq/proofiness"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:text-ink"
-        >
-          GitHub ↗
-        </a>
+      <nav aria-label="Footer" className="font-display text-xs font-semibold uppercase tracking-widish text-stone-700">
+        <div className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1">
+          <FooterLink slug="about">About</FooterLink>
+          <span className="text-stone-400" aria-hidden="true">·</span>
+          <FooterLink slug="privacy">Privacy</FooterLink>
+          <span className="text-stone-400" aria-hidden="true">·</span>
+          <FooterLink slug="terms">Terms</FooterLink>
+          <span className="text-stone-400" aria-hidden="true">·</span>
+          <FooterLink slug="help">Help</FooterLink>
+          <span className="text-stone-400" aria-hidden="true">·</span>
+          <a href="#/settings" className="hover:text-ink">
+            Settings
+          </a>
+        </div>
+        {showGitHub && (
+          <div className="mt-2 flex justify-center">
+            <a
+              href="https://github.com/davidsimonesq/proofiness"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-ink"
+            >
+              GitHub ↗
+            </a>
+          </div>
+        )}
       </nav>
     </footer>
   );
