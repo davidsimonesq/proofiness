@@ -71,11 +71,11 @@ export function InviteCodeGate({ reason, onAccepted }: Props) {
             <span className="font-serif italic text-stone-600">— {reason}</span>
           )}
         </p>
-        <p className="font-serif text-sm leading-relaxed text-stone-700">
+        <p className="border-l-4 border-accent bg-stone-100 px-4 py-3 font-serif text-base leading-relaxed text-stone-800">
           Don't have a code?{" "}
           <a
             href="#/request-invite"
-            className="text-ink underline decoration-stone-400 underline-offset-2 hover:decoration-ink"
+            className="font-semibold text-accent underline decoration-accent-dim underline-offset-2 hover:decoration-accent"
           >
             Submit your first factual claim
           </a>
