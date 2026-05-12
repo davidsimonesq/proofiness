@@ -10,6 +10,7 @@ import {
   getDossierCreatorCode,
   deleteDossier,
   listDossiers,
+  setDossierShared,
   type ListCursor,
 } from "../lib/db.js";
 import { checkInviteAndConsume, validateInviteCode } from "../lib/invites.js";
@@ -174,9 +175,12 @@ export async function dossierRoutes(app: FastifyInstance): Promise<void> {
       // Record the creator code (null in BYOK mode) so the delete endpoint
       // can authorize subsequent delete requests from the same client.
       saveDossier(dossier, { createdByCode: byok.mode === "embedded" ? inviteCode : null });
-      // The creator just made it, so it's deletable by them. Echoing
-      // canDelete in the SSE done event spares the UI a re-fetch.
+      // The creator just made it, so it's deletable by them. Newly-created
+      // dossiers start private (isShared=false) — the creator opts in via
+      // the Share toggle on the dossier page. Echoing both in the SSE done
+      // event spares the UI a re-fetch.
       dossier.canDelete = byok.mode === "embedded" && inviteCode !== null;
+      dossier.isShared = false;
       writeSse(reply, EVT_DONE, { dossier });
     } catch (err) {
       // Normalization rejected the claim — emit a structured error the client
@@ -204,27 +208,51 @@ export async function dossierRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Fetch a saved dossier by id (used for shareable URLs and history view).
-  // canDelete is computed server-side by comparing the requester's invite-code
-  // header to the dossier's stored creator code — the raw creator code is
-  // never sent to clients (a permalink visitor shouldn't learn whose code
-  // created what).
+  // Visibility rule: the dossier is served if EITHER the requester is the
+  // creator (matching x-invite-code) OR the dossier has been shared. Otherwise
+  // we return 403 with a message explaining the dossier is private — distinct
+  // from 404, so a holder of a stale shared URL learns the creator unshared
+  // it rather than that the dossier vanished.
+  //
+  // canDelete is computed server-side; the raw creator code is never sent to
+  // clients so a permalink visitor can't learn whose code created what.
   app.get<{ Params: { id: string } }>("/api/dossier/:id", async (req, reply) => {
     const result = getDossier(req.params.id);
     if (!result) {
       return reply.code(404).send({ error: "not_found", detail: "no dossier with that id" });
     }
     const requesterCode = readInviteCodeHeader(req.headers);
-    result.dossier.canDelete =
-      result.createdByCode !== null && result.createdByCode === requesterCode;
+    const isCreator = result.createdByCode !== null && result.createdByCode === requesterCode;
+    if (!isCreator && !result.isShared) {
+      return reply.code(403).send({
+        error: "not_shared",
+        detail:
+          "This assessment was made private by its creator and isn't currently available at this URL.",
+      });
+    }
+    result.dossier.canDelete = isCreator;
+    result.dossier.isShared = result.isShared;
     return { dossier: result.dossier };
   });
 
   // List recent dossiers (history view). Cursor-paginated. Cursor is opaque
   // base64-encoded JSON of (createdAt, id); clients pass it back unchanged.
-  app.get<{ Querystring: { cursor?: string; limit?: string } }>(
+  //
+  // `scope`: "mine" returns only dossiers created with the requester's invite
+  // code (empty if none); "public" returns only dossiers the creator has
+  // opted into sharing. Defaults to "public" so an unauthenticated visitor
+  // hitting /api/dossiers gets the public archive rather than a 4xx.
+  app.get<{ Querystring: { cursor?: string; limit?: string; scope?: string } }>(
     "/api/dossiers",
     async (req, reply) => {
       const limit = req.query.limit ? Number.parseInt(req.query.limit, 10) : undefined;
+      const rawScope = req.query.scope ?? "public";
+      if (rawScope !== "mine" && rawScope !== "public") {
+        return reply
+          .code(400)
+          .send({ error: "invalid_scope", detail: "scope must be 'mine' or 'public'" });
+      }
+      const scope = rawScope;
       let cursor: ListCursor | null = null;
       if (req.query.cursor) {
         const decoded = decodeCursor(req.query.cursor);
@@ -235,8 +263,8 @@ export async function dossierRoutes(app: FastifyInstance): Promise<void> {
         }
         cursor = decoded;
       }
-      const page = listDossiers({ limit, cursor });
       const requesterCode = readInviteCodeHeader(req.headers);
+      const page = listDossiers({ limit, cursor, scope, requesterCode });
       // Strip the internal createdByCode and inject the computed canDelete
       // before the response leaves the server.
       const dossiers = page.rows.map(({ createdByCode, ...summary }) => ({
@@ -247,6 +275,51 @@ export async function dossierRoutes(app: FastifyInstance): Promise<void> {
         dossiers,
         nextCursor: page.nextCursor ? encodeCursor(page.nextCursor) : null,
       };
+    },
+  );
+
+  // Toggle a dossier's public/private state. Creator-only: the requester's
+  // invite code must match the dossier's stored creator code. BYOK- and
+  // pre-v6-created dossiers (createdByCode === null) can't be toggled from
+  // the web — they keep their backfilled state.
+  app.patch<{ Params: { id: string }; Body: { isShared: boolean } }>(
+    "/api/dossier/:id/share",
+    async (req, reply) => {
+      const id = req.params.id;
+      if (typeof req.body?.isShared !== "boolean") {
+        return reply
+          .code(400)
+          .send({ error: "invalid_request", detail: "body must be { isShared: boolean }" });
+      }
+      const creatorCode = getDossierCreatorCode(id);
+      if (creatorCode === undefined) {
+        return reply.code(404).send({ error: "not_found", detail: "no dossier with that id" });
+      }
+      if (creatorCode === null) {
+        return reply.code(403).send({
+          error: "not_owned",
+          detail:
+            "This dossier wasn't created via an invite code, so the web client can't authorize changes to it.",
+        });
+      }
+      const requesterCode = readInviteCodeHeader(req.headers);
+      if (!requesterCode) {
+        return reply.code(401).send({
+          error: "invite_required",
+          detail: "Set the x-invite-code header to the code that created this dossier.",
+        });
+      }
+      if (requesterCode !== creatorCode) {
+        return reply.code(403).send({
+          error: "wrong_code",
+          detail: "Only the invite code that created this dossier can change its share state.",
+        });
+      }
+      const ok = setDossierShared(id, req.body.isShared);
+      if (!ok) {
+        return reply.code(404).send({ error: "not_found", detail: "no dossier with that id" });
+      }
+      return { isShared: req.body.isShared };
     },
   );
 

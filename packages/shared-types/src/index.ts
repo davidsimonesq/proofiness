@@ -214,6 +214,11 @@ export interface Dossier {
   // matches the code that created this dossier. The UI uses it to decide
   // whether to show the delete control. Computed per-request, not stored.
   canDelete?: boolean;
+  // Stored on the row. When true the dossier is in the public archive and
+  // accessible to anyone with the URL or via the public history scope; when
+  // false only the creator can fetch it. Toggled by the creator from the
+  // dossier page.
+  isShared?: boolean;
 }
 
 // Wire format for POST /api/dossier
@@ -261,7 +266,17 @@ export interface DossierSummary {
   createdAt: string;
   // Same semantics as Dossier.canDelete — computed per-request.
   canDelete?: boolean;
+  // Stored on the row. True when the dossier has been opted into the public
+  // archive by its creator. Useful in the "Yours" tab so the creator can see
+  // at-a-glance which of their dossiers are public.
+  isShared?: boolean;
 }
+
+// Scope for GET /api/dossiers — controls whose dossiers appear in the list.
+//   "mine"   → dossiers created with the requester's invite code (any
+//              isShared value). Empty when requester has no invite code.
+//   "public" → dossiers where isShared = true, from any creator.
+export type DossierListScope = "mine" | "public";
 
 // Cursor-paginated response. nextCursor is null when there are no more rows.
 // Cursor is opaque to the client — pass it back unchanged in `?cursor=` to get

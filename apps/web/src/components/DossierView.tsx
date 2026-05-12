@@ -26,6 +26,9 @@ export function DossierView({ dossier }: Props) {
   // The user clicks once to expand the case file (decomposition + assumptions
   // + unresolved questions). Stays in-page; no separate route.
   const [showFull, setShowFull] = useState(false);
+  // Local copy of isShared so the ShareButton toggle reflects updates without
+  // requiring the whole dossier to re-fetch.
+  const [isShared, setIsShared] = useState<boolean>(dossier.isShared ?? false);
 
   // Print support: when the user invokes Cmd-P, expand the deep path so the
   // full dossier prints, and force any <details> elements (LabelLegend,
@@ -49,7 +52,13 @@ export function DossierView({ dossier }: Props) {
           <span className="pf-label-loud">Assessment · {fmtNumber(dossier.number)}</span>
           <div className="flex items-center gap-3">
             {dossier.canDelete && <DeleteDossierButton dossierId={dossier.id} />}
-            <ShareButton dossierId={dossier.id} />
+            {dossier.canDelete && (
+              <ShareButton
+                dossierId={dossier.id}
+                isShared={isShared}
+                onSharedChange={setIsShared}
+              />
+            )}
           </div>
         </div>
         <div className="space-y-4 p-5">

@@ -161,6 +161,21 @@ const MIGRATIONS: Migration[] = [
       db.exec(`CREATE INDEX IF NOT EXISTS idx_dossiers_created_by_code ON dossiers(created_by_code);`);
     },
   },
+  {
+    version: 7,
+    up: (db) => {
+      // Per-dossier public/private flag. New dossiers default to private
+      // (is_shared = 0); the creator explicitly opts each one into the public
+      // archive via the Share toggle on the dossier page.
+      //
+      // Existing rows are backfilled to is_shared = 1 — pre-v7 behavior was
+      // that any saved dossier was readable by anyone with the URL or via
+      // the history list, so any URL already in the world keeps resolving.
+      db.exec(`ALTER TABLE dossiers ADD COLUMN is_shared INTEGER NOT NULL DEFAULT 0;`);
+      db.exec(`UPDATE dossiers SET is_shared = 1;`);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_dossiers_is_shared ON dossiers(is_shared);`);
+    },
+  },
 ];
 
 function runMigrations(db: Database.Database): void {
@@ -215,10 +230,13 @@ export function saveDossier(
       .prepare(`SELECT COALESCE(MAX(dossier_number), 0) AS m FROM dossiers`)
       .get() as { m: number };
     d.number = row.m + 1;
+    // New dossiers default to private (is_shared = 0). The creator opts in
+    // via the Share toggle on the dossier page (PATCH .../share), which
+    // updates the column without rewriting the body blob.
     db.prepare(
       `INSERT OR REPLACE INTO dossiers
-         (id, claim, created_at, body, subclaim_count, has_crux, dossier_number, created_by_code)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+         (id, claim, created_at, body, subclaim_count, has_crux, dossier_number, created_by_code, is_shared)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)`,
     ).run(
       d.id,
       d.claim,
@@ -233,20 +251,20 @@ export function saveDossier(
 }
 
 // Returns the parsed dossier plus the creator's invite code (or null for
-// pre-v6, BYOK, and gate-disabled rows). The route layer compares the code
-// to the requester's x-invite-code header to compute canDelete for the
-// wire response — keeping the raw creator code server-side so it isn't
-// exposed to permalink visitors.
+// pre-v6, BYOK, and gate-disabled rows) and the row's is_shared flag. The
+// route layer combines these with the requester's x-invite-code header to
+// decide whether to serve the dossier, whether canDelete is true, and
+// whether to expose isShared in the wire response.
 export function getDossier(
   id: string,
-): { dossier: Dossier; createdByCode: string | null } | null {
+): { dossier: Dossier; createdByCode: string | null; isShared: boolean } | null {
   const db = getDb();
   const row = db
     .prepare(
-      `SELECT body, dossier_number, created_by_code FROM dossiers WHERE id = ?`,
+      `SELECT body, dossier_number, created_by_code, is_shared FROM dossiers WHERE id = ?`,
     )
     .get(id) as
-    | { body: string; dossier_number: number | null; created_by_code: string | null }
+    | { body: string; dossier_number: number | null; created_by_code: string | null; is_shared: number }
     | undefined;
   if (!row) return null;
   try {
@@ -254,10 +272,21 @@ export function getDossier(
     // Patch number from the column. Bodies written before migration v5 don't
     // have it in the JSON; the column was backfilled at migration time.
     if (row.dossier_number !== null) parsed.number = row.dossier_number;
-    return { dossier: parsed, createdByCode: row.created_by_code };
+    return { dossier: parsed, createdByCode: row.created_by_code, isShared: row.is_shared === 1 };
   } catch {
     return null;
   }
+}
+
+// Toggle is_shared for a dossier. Returns true on update, false when no row
+// matched (caller should 404). Authorization (creator-only) lives in the
+// route layer, not here.
+export function setDossierShared(id: string, isShared: boolean): boolean {
+  const db = getDb();
+  const result = db
+    .prepare(`UPDATE dossiers SET is_shared = ? WHERE id = ?`)
+    .run(isShared ? 1 : 0, id);
+  return result.changes > 0;
 }
 
 // Lightweight creator-code lookup used by the DELETE route — avoids parsing
@@ -290,35 +319,70 @@ export interface ListPage {
 // guarantees deterministic ordering even when multiple dossiers share a
 // timestamp (unlikely but possible). Caller passes back the previous page's
 // nextCursor to fetch subsequent pages.
-export function listDossiers(opts: { limit?: number; cursor?: ListCursor | null } = {}): ListPage {
+//
+// `scope` controls visibility:
+//   - "mine": rows where created_by_code === requesterCode. Returns an empty
+//     page when requesterCode is null (no signed-in identity → no "yours").
+//   - "public": rows where is_shared = 1. Available to any caller, including
+//     those with no invite code.
+export function listDossiers(opts: {
+  limit?: number;
+  cursor?: ListCursor | null;
+  scope: "mine" | "public";
+  requesterCode: string | null;
+}): ListPage {
   const db = getDb();
   const limit = Math.min(Math.max(opts.limit ?? 25, 1), 100);
   // Fetch one extra row to detect whether more data exists without a separate count.
   const fetchLimit = limit + 1;
 
-  let rows: InternalDossierSummary[];
-  if (opts.cursor) {
-    rows = db
-      .prepare(
-        `SELECT id, dossier_number AS number, claim, created_at AS createdAt,
-                created_by_code AS createdByCode
-         FROM dossiers
-         WHERE created_at < ? OR (created_at = ? AND id < ?)
-         ORDER BY created_at DESC, id DESC
-         LIMIT ?`,
-      )
-      .all(opts.cursor.createdAt, opts.cursor.createdAt, opts.cursor.id, fetchLimit) as InternalDossierSummary[];
-  } else {
-    rows = db
-      .prepare(
-        `SELECT id, dossier_number AS number, claim, created_at AS createdAt,
-                created_by_code AS createdByCode
-         FROM dossiers
-         ORDER BY created_at DESC, id DESC
-         LIMIT ?`,
-      )
-      .all(fetchLimit) as InternalDossierSummary[];
+  // "Mine" with no requester code is structurally empty — no point hitting the
+  // db. Short-circuit so the UI can render the empty state cleanly.
+  if (opts.scope === "mine" && !opts.requesterCode) {
+    return { rows: [], nextCursor: null };
   }
+
+  const scopeClause =
+    opts.scope === "mine" ? `created_by_code = ?` : `is_shared = 1`;
+  const scopeParams = opts.scope === "mine" ? [opts.requesterCode] : [];
+
+  const baseSelect = `
+    SELECT id, dossier_number AS number, claim, created_at AS createdAt,
+           created_by_code AS createdByCode, is_shared AS isSharedInt
+    FROM dossiers
+    WHERE ${scopeClause}
+  `;
+
+  let rawRows: Array<InternalDossierSummary & { isSharedInt: number }>;
+  if (opts.cursor) {
+    rawRows = db
+      .prepare(
+        `${baseSelect}
+         AND (created_at < ? OR (created_at = ? AND id < ?))
+         ORDER BY created_at DESC, id DESC
+         LIMIT ?`,
+      )
+      .all(
+        ...scopeParams,
+        opts.cursor.createdAt,
+        opts.cursor.createdAt,
+        opts.cursor.id,
+        fetchLimit,
+      ) as Array<InternalDossierSummary & { isSharedInt: number }>;
+  } else {
+    rawRows = db
+      .prepare(
+        `${baseSelect}
+         ORDER BY created_at DESC, id DESC
+         LIMIT ?`,
+      )
+      .all(...scopeParams, fetchLimit) as Array<InternalDossierSummary & { isSharedInt: number }>;
+  }
+
+  const rows: InternalDossierSummary[] = rawRows.map(({ isSharedInt, ...rest }) => ({
+    ...rest,
+    isShared: isSharedInt === 1,
+  }));
 
   const hasMore = rows.length > limit;
   const page = hasMore ? rows.slice(0, limit) : rows;

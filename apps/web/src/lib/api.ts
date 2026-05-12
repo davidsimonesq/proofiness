@@ -356,14 +356,40 @@ export async function requestInvite(claim: string): Promise<RequestInviteResult>
   return { status: "error", detail };
 }
 
-export async function listDossiers(opts: { cursor?: string; limit?: number } = {}): Promise<DossierList> {
+export async function listDossiers(
+  opts: { cursor?: string; limit?: number; scope?: "mine" | "public" } = {},
+): Promise<DossierList> {
   const params = new URLSearchParams();
   if (opts.cursor) params.set("cursor", opts.cursor);
   if (opts.limit) params.set("limit", String(opts.limit));
+  if (opts.scope) params.set("scope", opts.scope);
   const qs = params.toString();
   const url = qs ? apiUrl(`/api/dossiers?${qs}`) : apiUrl("/api/dossiers");
-  // Send the invite code so the server can compute canDelete per row.
+  // Send the invite code so the server can compute canDelete per row and
+  // resolve the "mine" scope to the requester's creations.
   const res = await fetch(url, { headers: authHeaders() });
   if (!res.ok) throw new Error(`Failed to load history (${res.status})`);
   return (await res.json()) as DossierList;
+}
+
+// Toggle a dossier's public/private state. Creator-only on the server; the
+// caller's invite code must match the dossier's stored creator code.
+export async function setDossierShared(id: string, isShared: boolean): Promise<boolean> {
+  const res = await fetch(apiUrl(`/api/dossier/${encodeURIComponent(id)}/share`), {
+    method: "PATCH",
+    headers: { "content-type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ isShared }),
+  });
+  if (!res.ok) {
+    let detail = `Couldn't update sharing (${res.status})`;
+    try {
+      const body = (await res.json()) as { detail?: string };
+      if (body.detail) detail = body.detail;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail);
+  }
+  const body = (await res.json()) as { isShared: boolean };
+  return body.isShared;
 }

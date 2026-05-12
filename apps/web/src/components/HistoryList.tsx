@@ -1,9 +1,15 @@
 import { useEffect, useState } from "react";
 import type { DossierSummary } from "@proofiness/shared-types";
 import { deleteDossier, listDossiers } from "../lib/api.js";
+import { getInviteCode } from "../lib/invites.js";
 import { buildDossierHash } from "../lib/route.js";
 
+type Scope = "mine" | "public";
+
 export function HistoryList() {
+  // "Mine" requires an invite code in localStorage; default to it when present
+  // so returning users see their own work first. New visitors land on "Public".
+  const [scope, setScope] = useState<Scope>(() => (getInviteCode() ? "mine" : "public"));
   const [items, setItems] = useState<DossierSummary[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [phase, setPhase] = useState<"loading" | "loading_more" | "ready" | "error">("loading");
@@ -16,7 +22,11 @@ export function HistoryList() {
 
   useEffect(() => {
     setPhase("loading");
-    listDossiers()
+    setItems([]);
+    setNextCursor(null);
+    setConfirmId(null);
+    setRowError(null);
+    listDossiers({ scope })
       .then((page) => {
         setItems(page.dossiers);
         setNextCursor(page.nextCursor);
@@ -26,13 +36,13 @@ export function HistoryList() {
         setError(err.message);
         setPhase("error");
       });
-  }, []);
+  }, [scope]);
 
   async function loadMore() {
     if (!nextCursor) return;
     setPhase("loading_more");
     try {
-      const page = await listDossiers({ cursor: nextCursor });
+      const page = await listDossiers({ cursor: nextCursor, scope });
       setItems((prev) => [...prev, ...page.dossiers]);
       setNextCursor(page.nextCursor);
       setPhase("ready");
@@ -56,26 +66,53 @@ export function HistoryList() {
     }
   }
 
+  const tabs = (
+    <div className="mb-3 flex gap-0 border border-stone-300 bg-stone-100">
+      <TabButton
+        active={scope === "mine"}
+        onClick={() => setScope("mine")}
+        label="Yours"
+      />
+      <TabButton
+        active={scope === "public"}
+        onClick={() => setScope("public")}
+        label="Public"
+      />
+    </div>
+  );
+
   if (phase === "loading") {
-    return <p className="font-mono text-sm text-stone-600">Loading index…</p>;
+    return (
+      <>
+        {tabs}
+        <p className="font-mono text-sm text-stone-600">Loading index…</p>
+      </>
+    );
   }
   if (phase === "error") {
     return (
-      <p className="font-mono text-sm text-oxblood">
-        Couldn't load index: {error}
-      </p>
+      <>
+        {tabs}
+        <p className="font-mono text-sm text-oxblood">Couldn't load index: {error}</p>
+      </>
     );
   }
   if (items.length === 0) {
     return (
-      <p className="font-serif text-sm italic text-stone-600">
-        No saved assessments.
-      </p>
+      <>
+        {tabs}
+        <p className="font-serif text-sm italic text-stone-600">
+          {scope === "mine"
+            ? "You haven't created any assessments yet — or you're using a different invite code than the one that created them."
+            : "No assessments have been shared to the public archive yet."}
+        </p>
+      </>
     );
   }
 
   return (
     <>
+      {tabs}
       <ul className="divide-y divide-stone-300 border border-stone-300 bg-white">
         {items.map((item) => {
           const isConfirming = confirmId === item.id;
@@ -91,6 +128,9 @@ export function HistoryList() {
                   <p className="line-clamp-2 font-sans text-sm text-ink">{item.claim}</p>
                   <p className="mt-1 font-mono text-[0.7rem] uppercase tracking-widish text-stone-500">
                     {new Date(item.createdAt).toLocaleString()}
+                    {scope === "mine" && item.isShared && (
+                      <span className="ml-2 text-accent">• Public</span>
+                    )}
                   </p>
                   {err && (
                     <p className="mt-1 font-mono text-[0.7rem] uppercase tracking-widish text-oxblood">
@@ -157,5 +197,30 @@ export function HistoryList() {
         </button>
       )}
     </>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={
+        active
+          ? "flex-1 border-b-2 border-accent bg-white px-3 py-2 font-display text-xs font-semibold uppercase tracking-widish text-ink"
+          : "flex-1 border-b-2 border-transparent px-3 py-2 font-display text-xs font-semibold uppercase tracking-widish text-stone-500 hover:bg-stone-50 hover:text-ink"
+      }
+    >
+      {label}
+    </button>
   );
 }
