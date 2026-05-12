@@ -40,6 +40,17 @@ const InferredCitationSchema = z.object({
 
 const InferredListSchema = z.array(InferredCitationSchema);
 
+// Haiku ignores "no markdown fences" instructions some fraction of the time —
+// sometimes wrapping the whole reply in ```json…```, sometimes only opening
+// the fence, sometimes leaving trailing prose. Strip both fence positions
+// independently so any of those variants parses cleanly.
+function stripCodeFences(text: string): string {
+  let body = text.trim();
+  body = body.replace(/^```(?:json)?[ \t]*\r?\n?/, "");
+  body = body.replace(/\r?\n?[ \t]*```[ \t]*$/, "");
+  return body.trim();
+}
+
 export interface CitationCandidate {
   // For "linked": the href from the parent article. For "inferred_searched":
   // empty until the tracer resolves it via search.
@@ -100,9 +111,7 @@ export async function inferFromProse(bodyText: string): Promise<CitationCandidat
 
   let raw: unknown;
   try {
-    const trimmed = textBlock.text.trim();
-    const fenceMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/);
-    raw = JSON.parse(fenceMatch?.[1] ?? trimmed);
+    raw = JSON.parse(stripCodeFences(textBlock.text));
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[extract-citations] invalid JSON: ${msg}`);
