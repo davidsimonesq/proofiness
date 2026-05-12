@@ -1,3 +1,4 @@
+import type { OutgoingHttpHeaders } from "node:http";
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { z } from "zod";
 import type { ProgressEvent } from "@proofiness/shared-types";
@@ -129,12 +130,20 @@ export async function dossierRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // SSE response headers — disable proxy/server buffering so events flush immediately.
+    //
+    // Writing to reply.raw bypasses Fastify's reply lifecycle, which means
+    // headers normally added by hooks (CORS allow-origin from @fastify/cors,
+    // x-request-id from server.ts's onSend) never make it onto this response.
+    // Carry forward anything already set on the reply, then layer the SSE-
+    // specific headers on top so they take precedence over any defaults.
     reply.raw.writeHead(200, {
+      ...reply.getHeaders(),
       "content-type": "text/event-stream",
       "cache-control": "no-cache, no-transform",
       connection: "keep-alive",
       "x-accel-buffering": "no",
-    });
+      "x-request-id": req.id,
+    } as OutgoingHttpHeaders);
 
     // Heartbeat every 15s so intermediaries don't drop the connection during
     // long LLM calls. Comment lines in SSE are ignored by the client parser.
