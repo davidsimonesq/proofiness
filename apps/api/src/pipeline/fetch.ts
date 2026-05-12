@@ -4,8 +4,14 @@
 // The caller falls back to the Tavily snippet either way; this module's job is
 // to enrich what's already there, not to be the single point of failure.
 
-import { JSDOM } from "jsdom";
+import { JSDOM, VirtualConsole } from "jsdom";
 import { Readability } from "@mozilla/readability";
+
+// jsdom's default virtual console writes CSS parse errors and other warnings
+// straight to stderr — a single Divi/WordPress page can produce dozens of
+// noisy stack traces. We don't act on those signals (Readability cares about
+// text, not styles), so use an empty VirtualConsole to drop them on the floor.
+const SILENT_CONSOLE = new VirtualConsole();
 
 const FETCH_TIMEOUT_MS = 10_000;
 // Bumped in Phase 4: provenance needs the full article to extract cited
@@ -105,7 +111,7 @@ export async function fetchAndExtract(url: string): Promise<FetchResult> {
 
   let dom: JSDOM;
   try {
-    dom = new JSDOM(html, { url });
+    dom = new JSDOM(html, { url, virtualConsole: SILENT_CONSOLE });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return { paywalled: false, fetchError: `parse: ${msg}` };
